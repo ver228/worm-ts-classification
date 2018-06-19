@@ -8,7 +8,7 @@ Created on Tue May 15 13:04:37 2018
 import pathlib
 import sys
 
-src_d = pathlib.Path(__file__).resolve().parents[1] / 'src'
+src_d = pathlib.Path(__file__).resolve().parents[1] / 'worm_ts_classification'
 sys.path.append(str(src_d))
 
 from path import _root_dirs
@@ -87,6 +87,7 @@ if __name__ == '__main__':
     video_info = []
     for fname in fnames:
         bn = os.path.basename(fname).replace(f_ext, '')
+        
         parts = bn.split('_')
         parts = parts[:-1] if parts[-1] == 'ROIs' else parts
         
@@ -99,6 +100,7 @@ if __name__ == '__main__':
         time_str = datetime.datetime.strftime(dt, '%H:%M:%S')
         
         fname_r = fname.replace(root_dir, '')
+        
         set_n = int(fname_r.partition('_Set')[-1][0])
         
         row = (strain, set_n, n_worms, date_str, time_str, fname_r)

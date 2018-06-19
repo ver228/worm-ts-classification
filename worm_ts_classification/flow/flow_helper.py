@@ -50,8 +50,16 @@ def get_strains_ids(snps):
 
 
 def add_bn_series(df):
-    func = lambda x : os.path.basename(x).rpartition('_')[0]
-    df['base_name'] = df['file_path'].apply(func)
+    def _remove_end(x, postfix):
+        return x[:-len(postfix)] if x.endswith(postfix) else x 
+        
+    def _get_base_name(x):
+        bn = os.path.basename(x)
+        bn = _remove_end(bn, '_embeddings.hdf5')
+        bn = _remove_end(bn, '_ROIs')
+        return bn
+    
+    df['base_name'] = df['file_path'].apply(_get_base_name)
     return df
 
 
@@ -71,12 +79,14 @@ def add_folds(df):
     with open(DFLT_FOLDS_FILE, 'rb') as fid:
         folds_dict = pickle.load(fid)
     df['fold'] = df['base_name'].map(folds_dict)
+    
+    assert not np.any(np.isnan(df['fold']))
+    
     return df
     
 
 #%%
 if __name__ == '__main__':
-    
     #%%
     fname = '/Users/avelinojaver/Documents/Data/experiments/classify_strains/CeNDR_angles.hdf5'
     
