@@ -23,7 +23,11 @@ def get_path(emb_set, platform = None, is_tmp = True):
     root = _root_dirs[platform]
     
     
-    fname = root + 'experiments/classify_strains/CeNDR_{}.hdf5'.format(emb_set)
+    fname = root + 'experiments/classify_strains/{}.hdf5'.format(emb_set)
+    if not os.path.exists(fname):
+        fname = root + 'experiments/classify_strains/CeNDR_{}.hdf5'.format(emb_set)
+    
+    
     results_dir = os.path.join(root, 'experiments/classify_strains/results')
     
     if not os.path.exists(results_dir):

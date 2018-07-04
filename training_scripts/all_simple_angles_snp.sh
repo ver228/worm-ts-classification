@@ -11,7 +11,8 @@ echo "Username: " `whoami`
 echo $HOME
 echo cuda_id: $CUDA_VISIBLE_DEVICES
 
-python $HOME/Github/classify_strains/experiments/ts_models/train.py \
+SCRIPTPATH="$HOME/GitLab/worm-ts-classification/worm_ts_classification/trainer.py"
+python $SCRIPTPATH \
 --model_name 'simple' --set_type 'angles' --n_epochs 1000 --batch_size 8 \
 --num_workers 1 --lr 0.0001  --copy_tmp '/tmp/avelino'$CUDA_VISIBLE_DEVICES \
 --is_snp 

@@ -12,7 +12,10 @@ echo $HOME
 echo cuda_id: $CUDA_VISIBLE_DEVICES
 
 SCRIPTPATH="$HOME/GitLab/worm-ts-classification/worm_ts_classification/trainer.py"
-python $SCRIPTPATH --is_tiny --model_name 'simple' --set_type 'angles' --n_epochs 1000 --batch_size 8 --num_workers 1 --lr 0.0001  --copy_tmp '/tmp/avelino'
+python $SCRIPTPATH \
+--model_name 'simpledilated' --set_type 'AE_emb32_20180613_l1' --n_epochs 1000 --batch_size 8 \
+--num_workers 1 --optimizer 'sgd' --lr 0.001  --weight_decay 0.0001 \
+--copy_tmp '/tmp/avelino'$CUDA_VISIBLE_DEVICES 
 
 echo "Finished at :"`date`
 exit 0

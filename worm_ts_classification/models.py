@@ -277,7 +277,7 @@ def drn111111(num_classes):
 class SimpleDilated(nn.Module):
     #https://github.com/fyu/drn/blob/master/drn.py
     
-    def __init__(self, num_classes, nf = 16, dropout_fc = 0.5):
+    def __init__(self, num_classes, nf = 16, dropout_fc = 0.5, use_maxpooling=False):
         super().__init__()
         layers = [conv_layer(1, nf, ks = 7, stride=1)]
         
@@ -305,8 +305,10 @@ class SimpleDilated(nn.Module):
         
         self.cnn_clf = nn.Sequential(*layers)
         
+        
+        pooling_func = nn.AdaptiveMaxPool2d(1) if use_maxpooling  else nn.AdaptiveAvgPool2d(1)
         self.fc_clf = nn.Sequential(
-                nn.AdaptiveAvgPool2d(1),  
+                pooling_func,  
                 nn.Dropout(dropout_fc),
                 nn.Conv2d(nf, num_classes, kernel_size=1,
                                 stride=1, padding=0, bias=True),
@@ -359,8 +361,10 @@ class SimpleDilated1D(nn.Module):
         
         self.cnn_clf = nn.Sequential(*layers)
         
+        
+        
         self.fc_clf = nn.Sequential(
-                nn.AdaptiveAvgPool1d(1),  
+                nn.AdaptiveMaxPool1d(1),  
                 nn.Dropout(dropout_fc),
                 nn.Conv1d(nf, num_classes, kernel_size=1,
                                 stride=1, padding=0, bias=True),

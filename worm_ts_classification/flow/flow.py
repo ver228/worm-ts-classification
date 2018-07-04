@@ -5,19 +5,19 @@ Created on Tue May 15 13:04:37 2018
 
 @author: avelinojaver
 """
-from .flow_helper import add_folds, get_strains_ids, read_CeNDR_snps
+from .flow_helper import add_folds, read_CeNDR_snps, load_strain_dict
 
 import pandas as pd
 import tables
 import numpy as np
 import os
 import random
-import tqdm
 
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
-_divergent_set = ['N2',
+
+DIVERGENT_SET = ['N2',
  'CB4856',
  'DL238',
  'JU775',
@@ -57,7 +57,7 @@ class SkelEmbeddingsFlow(Dataset):
             trajectories_ranges = fid['/trajectories_ranges']
             video_info = fid['/video_info']
             video_info['strain'] = video_info['strain'].str.strip(' ')
-            video_info = add_folds(video_info)
+            video_info = add_folds(video_info, self.fname)
             
             
             #add the size of each chuck in the video
@@ -67,8 +67,8 @@ class SkelEmbeddingsFlow(Dataset):
             trajectories_ranges = trajectories_ranges[trajectories_ranges['size'] >= min_traj_size]
             
             #get the total size of all the chucks in a video
-            tot_ranges = trajectories_ranges.groupby('video_id').agg({'size':'sum'})
-            video_info = video_info[tot_ranges['size'] >=sample_size]
+            #tot_ranges = trajectories_ranges.groupby('video_id').agg({'size':'sum'})
+            #video_info = video_info[tot_ranges['size'] >= sample_size]
             
             #only keep the strains that have at least 3 valid videos
             vid_per_strain = video_info['strain'].value_counts()
@@ -83,13 +83,14 @@ class SkelEmbeddingsFlow(Dataset):
             good = video_info['strain'].isin(['N2', 'CB4856'])
             video_info = video_info[good]
         if is_divergent_set:
-            good = video_info['strain'].isin(_divergent_set)
+            good = video_info['strain'].isin(DIVERGENT_SET)
             video_info = video_info[good]
         
         
         self.video_info = video_info
         self.video_traj_ranges = trajectories_ranges.groupby('video_id')
         self.fold_n_test = fold_n_test
+        
         
         self.train_index = self.video_info.index[self.video_info['fold'] != self.fold_n_test].tolist()
         self.test_index = self.video_info.index[self.video_info['fold'] == self.fold_n_test].tolist()
@@ -99,7 +100,6 @@ class SkelEmbeddingsFlow(Dataset):
     def train(self):
         self.is_train = True
         tot = len(self.train_index)*self.train_epoch_magnifier
-        #
         
         #balance classes sampling
         if self.is_balance_training:
@@ -192,14 +192,18 @@ class SkelTrainer(SkelEmbeddingsFlow):
     def __init__(self, return_label = True, return_snp = False, **argkws):
         super().__init__(**argkws)
         
-        self._snps = read_CeNDR_snps()
-        self._strain_dict = get_strains_ids(self._snps)
+        data_name = os.path.basename(self.fname)
+        if data_name.startswith('CeNDR'):
+            self._snps = read_CeNDR_snps()
+            valid_strains = self._snps.columns[4:].tolist()
+            self._snps[valid_strains] = (self._snps[valid_strains]>0).astype(np.float32)
+            self._strain_dict  = {k:ii for ii, k in enumerate(valid_strains)}
+            
+            self.video_info = self.video_info[self.video_info['strain'].isin(valid_strains)]
+        else:
+            self._strain_dict = load_strain_dict(self.fname)
         
-        valid_strains = self._snps.columns[4:].tolist()
-        self._snps[valid_strains] = (self._snps[valid_strains]>0).astype(np.float32)
-        {k:ii for ii, k in enumerate(valid_strains)}
         
-        self.video_info = self.video_info[self.video_info['strain'].isin(valid_strains)]
         self.train_index = self.video_info.index[self.video_info['fold'] != self.fold_n_test]
         self.test_index = self.video_info.index[self.video_info['fold'] == self.fold_n_test]
 
@@ -214,7 +218,6 @@ class SkelTrainer(SkelEmbeddingsFlow):
             return len(self._strain_dict)
         elif self.return_snp:
             return self._snps.shape[0]
-    
     
     def __getitem__(self, index):
         vid_id = self.valid_index[index]
@@ -234,53 +237,6 @@ def collate_fn(batch):
     out = [torch.from_numpy(np.stack(x)) for x in zip(*batch)]
     return out
 
-if __name__ == '__main__':
-    import sys
-    from path import _root_dirs
-    
-    p = 'loc' if sys.platform == 'darwin' else 'ox'
-    #p = 'tmp'
-    root = _root_dirs[p]
-    
-    emb_set = 'AE_emb_20180206'
-    #emb_set = 'angles'
-    fname = root + 'experiments/classify_strains/CeNDR_{}.hdf5'.format(emb_set)
-    #fname = '/Users/avelinojaver/Documents/Data/classify_strains/CeNDR_{}.hdf5'.format(emb_set)
-    #fname = root + 'CeNDR_{}.hdf5'.format(emb_set)
-    
-    #%%
-    
-    gen = SkelTrainer(fname = fname, 
-                      is_divergent_set = False, 
-                      is_tiny = False,
-                        return_label = False, 
-                        return_snp = True,
-                        unsampled_test = True
-                        )
-    print([gen._strain_dict[x] for x in _divergent_set])
-    
-    #%%
-    
-    loader = DataLoader(gen, 
-                        batch_size = 2, 
-                        collate_fn = collate_fn,
-                        num_workers = 2
-                        )
-    #%%
-    gen.test()
-    dat = []
-    
-    #print(gen.video_info.loc[gen.valid_index, 'strain'].value_counts())
-    #for ii, D in enumerate(tqdm.tqdm(gen)):
-    #    dat.append(D[1])
-        
-        
-        
-    for ii, D in enumerate(gen):    
-        print([x.shape for x in D])
-        if ii > 10:
-            break
-        break
-    #plt.imshow(D[0][0].T, aspect='auto')
+
     
  

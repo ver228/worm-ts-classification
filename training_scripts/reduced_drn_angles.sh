@@ -11,7 +11,8 @@ echo "Username: " `whoami`
 echo $HOME
 echo cuda_id: $CUDA_VISIBLE_DEVICES
 
-python $HOME/Github/classify_strains/experiments/ts_models/train.py --is_divergent_set --model_name 'drn111111' \
+SCRIPTPATH="$HOME/GitLab/worm-ts-classification/worm_ts_classification/trainer.py"
+python $SCRIPTPATH --is_divergent_set --model_name 'drn111111' \
 --set_type 'angles' --n_epochs 1000 --batch_size 4 --num_workers 1 --lr 0.0001 --copy_tmp '/tmp/avelino' --cuda_id 3
 
 echo "Finished at :"`date`

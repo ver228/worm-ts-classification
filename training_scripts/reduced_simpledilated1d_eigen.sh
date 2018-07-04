@@ -11,9 +11,10 @@ echo "Username: " `whoami`
 echo $HOME
 echo cuda_id: $CUDA_VISIBLE_DEVICES
 
-python $HOME/Github/classify_strains/experiments/ts_models/train.py --is_divergent_set \
---model_name 'simpledilated1d' --set_type 'AE_emb_20180206' --n_epochs 1000 --batch_size 8 \
---num_workers 1 --optimizer 'adam' --lr 0.000001 --copy_tmp '/tmp/avelino1' \
+SCRIPTPATH="$HOME/GitLab/worm-ts-classification/worm_ts_classification/trainer.py"
+python $SCRIPTPATH --is_divergent_set \
+--model_name 'simpledilated1d' --set_type 'eigen' --n_epochs 1000 --batch_size 8 --num_workers 1 \
+--lr 0.0001 --copy_tmp '/tmp/avelino5'
 
 echo "Finished at :"`date`
 

@@ -45,10 +45,10 @@ if __name__ == '__main__':
     #%%
     with torch.no_grad():
         X, _ = dat
+        
         res = model.decoder(X[0,0].transpose_(0, 1)[:250])
     #%%
-        
-    
+     
 #    
 #    for v, p in zip(dat.squeeze(), pred.squeeze()):
 #        fig, axs = plt.subplots(1,3, figsize=(15, 5), sharex=True, sharey=True)

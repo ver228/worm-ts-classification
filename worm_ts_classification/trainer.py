@@ -5,6 +5,11 @@ Created on Tue Nov 21 11:42:24 2017
 
 @author: ajaver
 """
+import pathlib
+import sys
+src_d = pathlib.Path(__file__).resolve().parents
+sys.path.append(str(src_d))
+
 from models import CNNClf, CNNClf1D, Darknet, SimpleDilated, SimpleDilated1D, drn111111
 from flow import collate_fn, SkelTrainer
 from path import get_path
@@ -68,7 +73,25 @@ def copy_data_to_tmp(fname, copy_tmp):
     except:
         shutil.copyfile(fname, new_fname)
     return new_fname
-        
+#%%
+def get_model(model_name, num_classes, embedding_size):
+    if model_name == 'darknet':
+        model = Darknet([1, 2, 2, 2, 2], num_classes)
+    elif model_name == 'simple':
+        model = CNNClf(num_classes)
+    elif model_name == 'simple1d':
+        model = CNNClf1D(embedding_size, num_classes)
+    elif model_name == 'drn111111':
+        model = drn111111(num_classes)
+    elif model_name == 'simpledilated':
+        model = SimpleDilated(num_classes)
+    elif model_name == 'simpledilatedMax':
+        model = SimpleDilated(num_classes, use_maxpooling=True)
+    elif model_name == 'simpledilated1d':
+        model = SimpleDilated1D(embedding_size, num_classes)
+    else:
+        raise ValueError('Invalid model name {}'.format(model_name))
+    return model
 #%%
 class Trainer():
     def __init__(self,
@@ -102,9 +125,7 @@ class Trainer():
         print(dev_str)
         self.device = torch.device(dev_str)
         
-        
         self.fname, self.results_dir_root = get_path(set_type, platform = root_prefix)
-        
         if copy_tmp is not None:
             self.fname = copy_data_to_tmp(self.fname, copy_tmp)
             
@@ -135,20 +156,7 @@ class Trainer():
         
         
         self.embedding_size = self.gen.embedding_size
-        if model_name == 'darknet':
-            self.model = Darknet([1, 2, 2, 2, 2], self.num_classes)
-        elif model_name == 'simple':
-            self.model = CNNClf(self.num_classes)
-        elif model_name == 'simple1d':
-            self.model = CNNClf1D(self.embedding_size, self.num_classes)
-        elif model_name == 'drn111111':
-            self.model = drn111111(self.num_classes)
-        elif model_name == 'simpledilated':
-            self.model = SimpleDilated(self.num_classes)
-        elif model_name == 'simpledilated1d':
-            self.model = SimpleDilated1D(self.embedding_size, self.num_classes)
-        else:
-            raise ValueError('Invalid model name {}'.format(model_name))
+        self.model = get_model(model_name, self.num_classes, self.embedding_size)
         
         
         if init_model_path:

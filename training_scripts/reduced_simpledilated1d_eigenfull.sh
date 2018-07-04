@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#$ -P rittscher.prjc -q gpu8.q@compG004 -l gputype=p100
+#$ -P rittscher.prjc -q gpu8.q -l gputype=p100
 #$ -l gpu=1 -pe shmem 1
 
 module use -a /mgmt/modules/eb/modules/all
@@ -12,8 +12,10 @@ echo $HOME
 echo cuda_id: $CUDA_VISIBLE_DEVICES
 
 SCRIPTPATH="$HOME/GitLab/worm-ts-classification/worm_ts_classification/trainer.py"
-python $SCRIPTPATH --is_tiny --model_name 'simple' --set_type 'angles' --n_epochs 1000 --batch_size 8 --num_workers 1 --lr 0.0001  --copy_tmp '/tmp/avelino'
+python $SCRIPTPATH --is_divergent_set \
+--model_name 'simpledilated1d' --set_type 'eigenfull' --n_epochs 1000 --batch_size 8 --num_workers 1 \
+--lr 0.0001 --copy_tmp '/tmp/avelino6'
 
 echo "Finished at :"`date`
-exit 0
 
+exit 0

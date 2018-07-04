@@ -11,10 +11,21 @@ import pickle
 import numpy as np
 import pandas as pd
 
+from pathlib import Path
 
-root_dir = os.path.dirname(__file__)
-DFLT_SNP_FILE = os.path.join(root_dir, 'CeNDR_snps.csv')
-DFLT_FOLDS_FILE = os.path.join(root_dir, 'fold_dict.p')
+
+ROOT_DIR = os.path.dirname(__file__)
+DFLT_SNP_FILE = os.path.join(ROOT_DIR, 'CeNDR_snps.csv')
+
+def get_folds_file(fname):
+    bn = Path(fname).name
+    if bn.startswith('SWDB'):
+        folds_file = os.path.join(ROOT_DIR, 'SWDB_fold_dict.p')
+    elif bn.startswith('CeNDR'):
+        folds_file = os.path.join(ROOT_DIR, 'CeNDR_fold_dict.p')
+    else:
+        raise ValueError
+    return folds_file
 
 def read_CeNDR_snps(source_file = DFLT_SNP_FILE):
     snps = pd.read_csv(source_file)
@@ -55,6 +66,7 @@ def add_bn_series(df):
         
     def _get_base_name(x):
         bn = os.path.basename(x)
+        bn = _remove_end(bn, '_featuresN.hdf5')
         bn = _remove_end(bn, '_embeddings.hdf5')
         bn = _remove_end(bn, '_ROIs')
         return bn
@@ -63,7 +75,7 @@ def add_bn_series(df):
     return df
 
 
-def save_folds_dict(df, save_file=DFLT_FOLDS_FILE, seed = 777):
+def save_folds_dict(df, source_file, seed = 777):
     df = add_bn_series(df)
     folds_dict = {}
     for ss, dat in df.groupby('strain'):
@@ -71,31 +83,51 @@ def save_folds_dict(df, save_file=DFLT_FOLDS_FILE, seed = 777):
         for bn in dat['base_name'].values:
             folds_dict[bn] = next(gen)
     
+    save_file = get_folds_file(source_file)
     with open(save_file, 'wb') as fid:
         pickle.dump(folds_dict, fid)
 
-def add_folds(df):
+def add_folds(df, source_file):
+    folds_file = get_folds_file(source_file)
     df = add_bn_series(df)
-    with open(DFLT_FOLDS_FILE, 'rb') as fid:
+    with open(folds_file, 'rb') as fid:
         folds_dict = pickle.load(fid)
     df['fold'] = df['base_name'].map(folds_dict)
     
-    assert not np.any(np.isnan(df['fold']))
+    if np.any(np.isnan(df['fold'])):
+        import pdb
+        pdb.set_trace()
+        raise ValueError()
     
     return df
-    
+#%%
+def _get_strain_dict_file(source_file):
+    bn = Path(source_file).name.partition('_')[0]
+    strain_dict_file = os.path.join(ROOT_DIR, bn + '_straindict.p')
+    return strain_dict_file
 
+def save_strain_dict(df, source_file):
+    strain_dict_file = _get_strain_dict_file(source_file)
+    strain_dict = {x:ii for ii,x in enumerate(sorted(df['strain'].unique()))}
+    with open(strain_dict_file, 'wb') as fid:
+        pickle.dump(strain_dict, fid)
+        
+def load_strain_dict(source_file):
+    strain_dict_file = _get_strain_dict_file(source_file)
+    with open(strain_dict_file, 'rb') as fid:
+        strain_dict = pickle.load(fid)
+    return strain_dict
 #%%
 if __name__ == '__main__':
-    #%%
-    fname = '/Users/avelinojaver/Documents/Data/experiments/classify_strains/CeNDR_angles.hdf5'
-    
+    #fname = '/Users/avelinojaver/Documents/Data/experiments/classify_strains/CeNDR_angles.hdf5'
+    fname = Path.home() / 'workspace/WormData/experiments/classify_strains/SWDB_angles.hdf5'
     with pd.HDFStore(fname) as fid:
         video_info = fid['/video_info']
         video_info['strain'] = video_info['strain'].str.strip(' ')
+    
+    #save_folds_dict(video_info, fname, seed = 777)
         
-        
-    video_info = add_folds(video_info)
+    video_info = add_folds(video_info, fname)
     #%%
     
     
