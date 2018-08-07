@@ -10,9 +10,10 @@ import sys
 src_d = pathlib.Path(__file__).resolve().parents
 sys.path.append(str(src_d))
 
-from models import CNNClf, CNNClf1D, Darknet, SimpleDilated, SimpleDilated1D, drn111111
-from flow import collate_fn, SkelTrainer
-from path import get_path
+from .models import CNNClf, CNNClf1D, Darknet, SimpleDilated, \
+SimpleDilated1D, drn111111, SWDBSimpleDilated
+from .flow import collate_fn, SkelTrainer
+from .path import get_path
 
 import tables
 import shutil
@@ -89,6 +90,10 @@ def get_model(model_name, num_classes, embedding_size):
         model = SimpleDilated(num_classes, use_maxpooling=True)
     elif model_name == 'simpledilated1d':
         model = SimpleDilated1D(embedding_size, num_classes)
+    elif model_name == 'swdbsimpledilated':
+        model = SWDBSimpleDilated(num_classes, freeze_SWDB=True)
+    elif model_name == 'swdbsimpledilatedunfreeze':
+        model = SWDBSimpleDilated(num_classes, freeze_SWDB=False)
     else:
         raise ValueError('Invalid model name {}'.format(model_name))
     return model
@@ -104,13 +109,17 @@ class Trainer():
                 weight_decay = 0,
                 model_name = 'simple',
                 set_type = 'angles',
-                is_balance_training = True,
-                is_tiny = False,
-                is_divergent_set = False,
                 root_prefix = None, 
                 copy_tmp = None,
                 init_model_path = None,
-                is_snp = False
+                
+                is_balance_training = True,
+                is_tiny = False,
+                is_divergent_set = False,
+                is_only_WT = False,
+                
+                is_snp = False,
+                merge_by_week = False
                 ):
         
         self.is_snp = is_snp
@@ -143,8 +152,10 @@ class Trainer():
                               is_balance_training = is_balance_training,
                               is_tiny = is_tiny,
                               is_divergent_set = is_divergent_set,
+                              is_only_WT = is_only_WT,
                               return_label = return_label, 
-                              return_snp = return_snp
+                              return_snp = return_snp,
+                              merge_by_week = merge_by_week
                           )
         
         self.loader = DataLoader(self.gen, 
@@ -158,7 +169,6 @@ class Trainer():
         self.embedding_size = self.gen.embedding_size
         self.model = get_model(model_name, self.num_classes, self.embedding_size)
         
-        
         if init_model_path:
             assert set_type in init_model_path
             if not os.path.exists(init_model_path):
@@ -168,11 +178,14 @@ class Trainer():
             self.model.load_state_dict(state['state_dict'])
             model_name = 'R_' + model_name
         
+        
         self.lr_scheduler = None
+        
+        model_params = filter(lambda p: p.requires_grad, self.model.parameters())
         if optimizer == 'adam':
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr = lr, weight_decay=weight_decay)
+            self.optimizer = torch.optim.Adam(model_params, lr = lr, weight_decay=weight_decay)
         elif optimizer == 'sgd':
-            self.optimizer = torch.optim.SGD(self.model.parameters(), lr = lr, momentum = 0.9, weight_decay = weight_decay)
+            self.optimizer = torch.optim.SGD(model_params, lr = lr, momentum = 0.9, weight_decay = weight_decay)
             #self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', patience = 10)
         
         else:
@@ -180,23 +193,34 @@ class Trainer():
         
         log_dir_root =  os.path.join(self.results_dir_root, 'logs')
         
-        add_postifx = ''
         if is_tiny:
             print("It's me, tiny-log!!!")
             log_dir_root =  os.path.join(self.results_dir_root, 'tiny_log')
-            add_postifx = '_tiny'
+            add_postfix = '_tiny'
         elif is_divergent_set:
             print("Divergent set")
             log_dir_root =  os.path.join(self.results_dir_root, 'log_divergent_set')
-            add_postifx = '_div'
+            add_postfix = '_div'
+        else:
+            add_postfix = ''
+        
+        if is_only_WT:
+            add_postfix += '_WT'
+        
+        
+        if not is_balance_training:
+            add_postfix = '_noB' + add_postfix
+        
+        if merge_by_week:
+            assert set_type.startswith('SWDB')
+            add_postfix += '_week' + add_postfix
         
         if self.is_snp:
             log_dir_root = log_dir_root + '_snp'
         
-        
         now = datetime.datetime.now()
         bn = now.strftime('%Y%m%d_%H%M%S') + '_' + model_name
-        bn += add_postifx
+        bn += add_postfix
         
         bn = '{}_{}_{}_lr{}_wd{}_batch{}'.format(set_type, bn, optimizer, lr, weight_decay, batch_size)
         print(bn)
@@ -292,14 +316,7 @@ class Trainer():
             
 #%%
 
-def main(**argkws):
-    tt = Trainer(**argkws)
-    tt.train()
-    
-        
-if __name__ == '__main__':
-    import fire
-    fire.Fire(main) 
+
 #    main(
 #         n_epochs = 1000,
 #        batch_size = 4,

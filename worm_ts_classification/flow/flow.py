@@ -5,7 +5,7 @@ Created on Tue May 15 13:04:37 2018
 
 @author: avelinojaver
 """
-from .flow_helper import add_folds, read_CeNDR_snps, load_strain_dict
+from .flow_helper import add_folds, read_CeNDR_snps, load_strain_dict, DIVERGENT_SET, SWDB_STRAINS
 
 import pandas as pd
 import tables
@@ -17,18 +17,29 @@ import torch
 from torch.utils.data import Dataset
 
 
-DIVERGENT_SET = ['N2',
- 'CB4856',
- 'DL238',
- 'JU775',
- 'MY16',
- 'MY23',
- 'CX11314',
- 'ED3017',
- 'EG4725',
- 'LKC34',
- 'JT11398',
- 'JU258']
+
+def _merge_videos_by_week(video_info, trajectories_ranges):
+    video_info['date'] = pd.to_datetime(video_info['date']).dt.normalize()
+    video_info['week'] = video_info['date'] - pd.to_timedelta(video_info['date'].dt.dayofweek, unit='d')
+    
+    cur_vid_ids = 0
+    vid_ids_conversion = {}
+    new_video_info = []
+    for (fold, date, strain), dat in video_info.groupby(['fold', 'week', 'strain']):
+        for ind, row in dat.iterrows():
+            vid_ids_conversion[ind] = cur_vid_ids
+        new_video_info.append((cur_vid_ids, fold, date, strain))
+        cur_vid_ids += 1
+    
+    trajectories_ranges['old_video_id'] = trajectories_ranges['video_id']
+    trajectories_ranges['video_id'] = trajectories_ranges['video_id'].map(vid_ids_conversion)
+    
+    
+    
+    new_video_info = pd.DataFrame(new_video_info, columns = ['video_id', 'fold', 'week', 'strain'])
+    
+    
+    return new_video_info, trajectories_ranges
 
 
 class SkelEmbeddingsFlow(Dataset):
@@ -41,7 +52,9 @@ class SkelEmbeddingsFlow(Dataset):
                  is_divergent_set = False,
                  is_tiny = False,
                  is_balance_training = False,
+                 is_only_WT = False,
                  unsampled_test = False,
+                 merge_by_week = False
                  ):
         
         assert os.path.exists(fname)
@@ -74,7 +87,10 @@ class SkelEmbeddingsFlow(Dataset):
             vid_per_strain = video_info['strain'].value_counts()
             ss = vid_per_strain.index[vid_per_strain.values > 2]
             video_info = video_info[video_info['strain'].isin(ss)]
-            
+        
+        if merge_by_week:
+            video_info, trajectories_ranges = _merge_videos_by_week(video_info, trajectories_ranges)
+        
         with tables.File(fname) as fid:
             skels_g = fid.get_node('/embeddings')
             self.embedding_size = skels_g.shape[1]
@@ -85,7 +101,12 @@ class SkelEmbeddingsFlow(Dataset):
         if is_divergent_set:
             good = video_info['strain'].isin(DIVERGENT_SET)
             video_info = video_info[good]
-        
+            
+        if is_only_WT:
+            valid_strains = ['N2_XX', 'N2_XO'] + [x + '_XX' for x in SWDB_STRAINS['wt_isolates']]
+            
+            good = video_info['strain'].isin(valid_strains)
+            video_info = video_info[good]
         
         self.video_info = video_info
         self.video_traj_ranges = trajectories_ranges.groupby('video_id')

@@ -5,6 +5,10 @@ Created on Fri Nov 17 11:55:57 2017
 
 @author: ajaver
 """
+from .path import get_path
+import os
+
+import torch
 from torch import nn
 import torch.nn.functional as F
 
@@ -300,8 +304,46 @@ class SimpleDilated(nn.Module):
                 conv_layer(nf, nf, ks = 3, dilation = (1, 1))
                 ]
         
+        self.cnn_clf = nn.Sequential(*layers)
         
         
+        pooling_func = nn.AdaptiveMaxPool2d(1) if use_maxpooling  else nn.AdaptiveAvgPool2d(1)
+        self.fc_clf = nn.Sequential(
+                pooling_func,  
+                nn.Dropout(dropout_fc),
+                nn.Conv2d(nf, num_classes, kernel_size=1,
+                                stride=1, padding=0, bias=True),
+                Flatten()
+                )
+        
+        for m in self.modules():
+            weights_init_xavier(m)
+    
+    def forward(self, x):
+        x = self.cnn_clf(x)
+        x = self.fc_clf(x)
+        return x
+#%%    
+class SimpleNoDilated(nn.Module):
+    #https://github.com/fyu/drn/blob/master/drn.py
+    
+    def __init__(self, num_classes, nf = 16, dropout_fc = 0.5, use_maxpooling=False):
+        super().__init__()
+        layers = [conv_layer(1, nf, ks = 7, stride=1)]
+        
+        
+        num_blocks = 5
+        for ii in range(num_blocks):
+            if ii < 2:
+                stride = (2,2)
+            else:
+                stride = (1,2)
+            
+            layers += conv_layer(nf, nf*2, stride = stride, dilation = 1)
+            nf *= 2
+        
+        layers += conv_layer(nf, nf, stride = (1,2), dilation = 1)
+        layers += conv_layer(nf, nf, stride = (1,2), dilation = 1)
         
         self.cnn_clf = nn.Sequential(*layers)
         
@@ -321,7 +363,7 @@ class SimpleDilated(nn.Module):
     def forward(self, x):
         x = self.cnn_clf(x)
         x = self.fc_clf(x)
-        return x    
+        return x 
 #%%
 def conv_layer1d(ni, nf, ks=3, stride=1, dilation=1):
     pad = ks//2*dilation
@@ -381,21 +423,58 @@ class SimpleDilated1D(nn.Module):
         x = self.cnn_clf(x)
         x = self.fc_clf(x)
         return x    
-    
+#%%
+        
+class SWDBSimpleDilated(nn.Module):
+    def __init__(self, num_classes, 
+                 dropout_fc = 0.5, 
+                 use_maxpooling = False,
+                 init_model_path = None,
+                 freeze_SWDB = True
+                 ):
+        super().__init__()
+        
+        if init_model_path is None:
+            #init_model_path = 'log_SWDB_angles/SWDB_angles_20180627_184430_simpledilated_sgd_lr0.001_wd0.0001_batch8/model_best.pth.tar'
+            init_model_path = 'log_SWDB_angles/SWDB_angles_20180711_211823_simpledilated_week_sgd_lr0.001_wd0.0001_batch8/model_best.pth.tar'
+
+        _, results_dir_root = get_path('')
+        init_model_path = os.path.join(results_dir_root, init_model_path)
+        
+        self.SWDB_model = SimpleDilated(365)
+        state = torch.load(init_model_path, map_location = 'cpu')
+        self.SWDB_model.load_state_dict(state['state_dict'])
+        self.SWDB_model.eval()
+        
+        if  freeze_SWDB:
+            for param in self.SWDB_model.parameters():
+                param.requires_grad = False
+        
+        pooling_func = nn.AdaptiveMaxPool2d(1) if use_maxpooling  else nn.AdaptiveAvgPool2d(1)
+        
+        num_maps = self.SWDB_model.cnn_clf[-1][0].weight.shape[0]
+        self.fc_clf = nn.Sequential(
+                pooling_func,  
+                nn.Dropout(dropout_fc),
+                nn.Conv2d(num_maps, num_classes, kernel_size=1,
+                                stride=1, padding=0, bias=True),
+                Flatten()
+                )
+        
+    def forward(self, x):
+        x = self.SWDB_model.cnn_clf(x)
+        x = self.fc_clf(x)
+        return x  
 #%%            
 if __name__ == '__main__':
-    import os
-    import torch
-    from path import get_path
-    
     from flow import collate_fn, SkelTrainer
     import tqdm
     from torch.utils.data import DataLoader
     
     
-    
-    #set_type = 'angles'
-    set_type = 'AE_emb_20180206'
+    set_type = 'angles'
+    #set_type = 'SWDB_angles'
+    #set_type = 'AE_emb_20180206'
     
     fname, results_dir_root = get_path(set_type)
     
@@ -411,10 +490,10 @@ if __name__ == '__main__':
     device = torch.device(dev_str)
     
     gen = SkelTrainer(fname = fname,
-                      is_divergent_set=True)
+                      is_divergent_set=False)
     
     #%%
-    model = SimpleDilated1D(gen.embedding_size,gen.num_classes)
+    model = SWDBSimpleDilated(gen.num_classes)
     model = model.to(device)
     
     #%%

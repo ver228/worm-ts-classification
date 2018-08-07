@@ -14,6 +14,7 @@ from worm_ts_classification.path import get_path as get_flow_path
 sys.path.append('../../worm-autoencoder/')
 from worm_autoencoder.models import AE2D
 
+
 import torch
 from torch.utils.data import DataLoader
 

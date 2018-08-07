@@ -10,6 +10,7 @@ import sys
 
 _root_dirs = {
         'osx' : '/Volumes/rescomp1/data/WormData/',
+        #'osx' : '/Users/avelinojaver/Data/',
         'centos_oxford' : '/well/rittscher/users/avelino/WormData/',
         'loc' : '/Users/avelinojaver/Documents/Data/',
         'tmp' : '/tmp/'
