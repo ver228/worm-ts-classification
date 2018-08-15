@@ -92,6 +92,7 @@ SWDB_STRAINS = dict(
                   ]
 )
 
+STRAINS_IN_COMMON = ['N2', 'CB4856', 'ED3017', 'JU258', 'MY16']
 
 def get_folds_file(fname):
     bn = Path(fname).name

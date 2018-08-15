@@ -11,7 +11,7 @@ src_d = pathlib.Path(__file__).resolve().parents
 sys.path.append(str(src_d))
 
 from .models import CNNClf, CNNClf1D, Darknet, SimpleDilated, \
-SimpleDilated1D, drn111111, SWDBSimpleDilated
+SimpleDilated1D, drn111111, SWDBSimpleDilated, SqueezeNetP, ResNetP, VGGP
 from .flow import collate_fn, SkelTrainer
 from .path import get_path
 
@@ -76,6 +76,18 @@ def copy_data_to_tmp(fname, copy_tmp):
     return new_fname
 #%%
 def get_model(model_name, num_classes, embedding_size):
+    def _getlayers2freeze(x):
+        #'resnet18-freeze13'
+        parts = x.split('-')
+        bn = parts[0]
+        if len(parts) > 1:
+            n_layers2freeze = int(parts[1].replace('freeze', ''))
+        else:
+            n_layers2freeze = None
+            
+        return bn, n_layers2freeze
+    
+    
     if model_name == 'darknet':
         model = Darknet([1, 2, 2, 2, 2], num_classes)
     elif model_name == 'simple':
@@ -94,6 +106,16 @@ def get_model(model_name, num_classes, embedding_size):
         model = SWDBSimpleDilated(num_classes, freeze_SWDB=True)
     elif model_name == 'swdbsimpledilatedunfreeze':
         model = SWDBSimpleDilated(num_classes, freeze_SWDB=False)
+    elif model_name.startswith('squeezenet'):
+        #'squeezenet1.0-freeze13'
+        bn, n_layers2freeze = _getlayers2freeze(model_name)
+        model = SqueezeNetP(bn, num_classes, n_layers2freeze)
+    elif model_name.startswith('resnet'):
+        bn, n_layers2freeze = _getlayers2freeze(model_name)
+        model = ResNetP(bn, num_classes, n_layers2freeze)
+    elif model_name.startswith('vgg'):
+        bn, n_layers2freeze = _getlayers2freeze(model_name)
+        model = VGGP(bn, num_classes, n_layers2freeze)
     else:
         raise ValueError('Invalid model name {}'.format(model_name))
     return model
@@ -117,6 +139,7 @@ class Trainer():
                 is_tiny = False,
                 is_divergent_set = False,
                 is_only_WT = False,
+                is_common_WT = False,
                 
                 is_snp = False,
                 merge_by_week = False
@@ -153,6 +176,7 @@ class Trainer():
                               is_tiny = is_tiny,
                               is_divergent_set = is_divergent_set,
                               is_only_WT = is_only_WT,
+                              is_common_WT = is_common_WT,
                               return_label = return_label, 
                               return_snp = return_snp,
                               merge_by_week = merge_by_week
@@ -206,6 +230,9 @@ class Trainer():
         
         if is_only_WT:
             add_postfix += '_WT'
+            
+        if is_common_WT:
+            add_postfix += '_WTcommon'
         
         
         if not is_balance_training:

@@ -26,8 +26,8 @@ if __name__ == '__main__':
     #%%
     generators = {}
     for emb_t in emb_types:
-        #fname, results_dir_root = get_path(emb_t)
-        fname = '/Users/avelinojaver/Data/experiments/classify_strains/CeNDR_{}.hdf5'.format(emb_t)
+        fname, results_dir_root = get_path(emb_t)
+        #fname = '/Users/avelinojaver/Data/experiments/classify_strains/CeNDR_{}.hdf5'.format(emb_t)
         generators[emb_t] = SkelTrainer(fname = fname,
                           is_divergent_set = False, 
                           is_tiny = False,
@@ -38,14 +38,14 @@ if __name__ == '__main__':
                             )
         
     
-    #%%
+    
     plot_params = {
             'angles' :('Angles', list(range(0, 49, 8)), None),
             'eigen' : ('EigenWorms', list(range(0, 6)), list(range(1, 7))), 
             'AE_emb32_20180613_l1' : ('AutoEncoder', list(range(0, 33, 8)), None),
             #'AE2DWithSkels32_emb32_20180620' : ('AutoEncoder + Skels', list(range(0, 33, 8)), None)
             }
-    
+    #%%
     row_id = 25
     max_frame = 2500
     tot_subplots = len(plot_params) + 1
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     
     
     for ii, emb_t in enumerate(['angles', 'eigen', 'AE_emb32_20180613_l1']):#, 'AE2DWithSkels32_emb32_20180620']):
-        #%%
+        
         gen = generators[emb_t]
         gen.test()
         
@@ -80,7 +80,7 @@ if __name__ == '__main__':
         
         X, = gen[row_id]
         X = X[0, :, :max_frame]
-        #%%
+        
         axs[ii+1].imshow(X, aspect='auto', interpolation='none')
         #axs[ii+1].set_title(stitle)
         

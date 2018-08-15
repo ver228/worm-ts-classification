@@ -29,7 +29,7 @@ if __name__ == '__main__':
                         return_snp = False,
                         unsampled_test = True,
                         sample_size = 22500,
-                        is_only_WT = True,
+                        is_common_WT = True,
                         merge_by_week = False#emb_set.startswith('SWDB')
                         )
     

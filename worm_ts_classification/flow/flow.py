@@ -5,7 +5,7 @@ Created on Tue May 15 13:04:37 2018
 
 @author: avelinojaver
 """
-from .flow_helper import add_folds, read_CeNDR_snps, load_strain_dict, DIVERGENT_SET, SWDB_STRAINS
+from .flow_helper import add_folds, read_CeNDR_snps, load_strain_dict, DIVERGENT_SET, SWDB_STRAINS, STRAINS_IN_COMMON
 
 import pandas as pd
 import tables
@@ -53,6 +53,7 @@ class SkelEmbeddingsFlow(Dataset):
                  is_tiny = False,
                  is_balance_training = False,
                  is_only_WT = False,
+                 is_common_WT = False,
                  unsampled_test = False,
                  merge_by_week = False
                  ):
@@ -107,6 +108,14 @@ class SkelEmbeddingsFlow(Dataset):
             
             good = video_info['strain'].isin(valid_strains)
             video_info = video_info[good]
+            
+        if is_common_WT:
+            valid_strains = STRAINS_IN_COMMON
+            if not (video_info['strain']=='N2').any():
+                valid_strains = [x + '_XX' for x in valid_strains]
+            good = video_info['strain'].isin(valid_strains)
+            video_info = video_info[good]
+            
         
         self.video_info = video_info
         self.video_traj_ranges = trajectories_ranges.groupby('video_id')

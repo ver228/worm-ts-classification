@@ -13,9 +13,8 @@ echo cuda_id: $CUDA_VISIBLE_DEVICES
 
 SCRIPTPATH="$HOME/GitLab/worm-ts-classification/scripts/train_model.py"
 python $SCRIPTPATH \
---model_name 'simpledilated' --set_type 'SWDB_angles' --n_epochs 1000 --batch_size 8 \
+--model_name 'squeezenet1.0-freeze13' --set_type 'SWDB_angles' --n_epochs 1000 --batch_size 8 \
 --num_workers 1 --optimizer 'sgd' --lr 0.001  --weight_decay 0.0001 \
---is_only_WT \
 --copy_tmp '/tmp/avelino'$CUDA_VISIBLE_DEVICES 
 
 echo "Finished at :"`date`

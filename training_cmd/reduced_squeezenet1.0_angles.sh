@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#$ -P rittscher.prjc -q gpu8.q@compG004 -l gputype=p100
+#$ -P rittscher.prjc -q gpu8.q -l gputype=p100
 #$ -l gpu=1 -pe shmem 1
 
 module use -a /mgmt/modules/eb/modules/all
@@ -12,11 +12,10 @@ echo $HOME
 echo cuda_id: $CUDA_VISIBLE_DEVICES
 
 SCRIPTPATH="$HOME/GitLab/worm-ts-classification/scripts/train_model.py"
-python $SCRIPTPATH \
---model_name 'simpledilated' --set_type 'SWDB_eigen' --n_epochs 2000 --batch_size 8 \
---num_workers 1 --optimizer 'sgd' --lr 0.001  --weight_decay 0.0001 \
---is_only_WT \
---copy_tmp '/tmp/avelino'$CUDA_VISIBLE_DEVICES 
-echo "Finished at :"`date`
-exit 0
+python $SCRIPTPATH --is_divergent_set \
+--model_name 'squeezenet1.0' --set_type 'angles' --n_epochs 1000 --batch_size 8 --num_workers 1 \
+--lr 0.0001 --copy_tmp '/tmp/avelino'$CUDA_VISIBLE_DEVICES
 
+echo "Finished at :"`date`
+
+exit 0

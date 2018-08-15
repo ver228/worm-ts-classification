@@ -16,6 +16,7 @@ from worm_ts_classification.flow import SkelTrainer, DIVERGENT_SET
 
 from sklearn.metrics import f1_score
 
+import datetime
 import pandas as pd
 import os
 import torch
@@ -26,7 +27,7 @@ import tqdm
 def get_accuracies(save_name, set_type, model_path, cuda_id=0):   
     fname, results_dir_root = get_path(set_type)
     
-    model_path = os.path.join(results_dir_root, model_path, 'checkpoint.pth.tar')
+    model_path = os.path.join(results_dir_root, model_path, 'model_best.pth.tar')
 
     
     bn = model_path.split(os.sep)[-2]
@@ -150,10 +151,35 @@ if __name__ == '__main__':
              ('CeNDR_AE',
               'AE_emb32_20180613_l1',
               'done/log_divergent_set/AE_emb32_20180613_l1_20180620_103134_simpledilated1d_div_adam_lr1e-05_wd0_batch8'
-             )
-             
+             )             
             ]
-   
+#   all_args = [
+#            ('CeNDR_vgg16bn',
+#             'angles',
+#             'log_divergent_set/angles_20180808_122631_vgg16bn_div_adam_lr0.0001_wd0_batch2'
+#             ),
+#             ('CeNDR_vgg11bn',
+#             'angles',
+#             'log_divergent_set/angles_20180808_130638_vgg11bn_div_adam_lr0.0001_wd0_batch4'
+#             ),
+#             
+#             ('CeNDR_resnet18',
+#             'angles',
+#             'log_divergent_set/angles_20180808_132150_resnet18_div_adam_lr0.0001_wd0_batch8'
+#             ),
+#             ('CeNDR_resnet34',
+#             'angles',
+#             'log_divergent_set/angles_20180808_130252_resnet34_div_adam_lr0.0001_wd0_batch8'
+#             ),
+#             ('CeNDR_squeezenet',
+#             'angles',
+#             'log_divergent_set/angles_20180808_133932_squeezenet10_div_adam_lr0.0001_wd0_batch8'
+#             ),
+#             ('CeNDR_angles',
+#             'angles',
+#             'log_divergent_set/angles_20180524_115242_simpledilated_div_lr0.0001_batch8'
+#             ),
+#             ]
    
    _, results_dir_root = get_path('')
    save_dir = Path(results_dir_root) / 'summary'
@@ -161,7 +187,7 @@ if __name__ == '__main__':
    
    all_summaries = []
    for args in all_args:
-       summary, df = get_accuracies(*args)
+       summary, df = get_accuracies(*args, cuda_id=cuda_id)
        
        df.to_csv(save_dir / (args[0] + '.csv'))
        
@@ -170,7 +196,11 @@ if __name__ == '__main__':
        all_summaries.append(summary)
        
    all_summaries = pd.DataFrame(all_summaries, columns=['name', 'acc_top1', 'acc_top5', 'f1'])
-   all_summaries.to_csv(df.to_csv(save_dir / (args[0] + '.csv')))
+  
+    
+   date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+   save_name = save_dir / 'Summary_{}.csv'.format(date_str)
+   all_summaries.to_csv(str(save_name))
    #%%
    def func(x):
       if isinstance(x, str):
@@ -178,11 +208,11 @@ if __name__ == '__main__':
       else:
           return "{:10.4f}".format(x)
    
-   for x in dd:
-       x = list(x)
-       x[1] = x[1] * 100
-       x[2] = x[2] * 100
-       ss = '{} & {:10.2f} & {:10.2f} & {:10.4f}'.format(*x)
-       
-       print(ss + r'\\')
+#   for x in dd:
+#       x = list(x)
+#       x[1] = x[1] * 100
+#       x[2] = x[2] * 100
+#       ss = '{} & {:10.2f} & {:10.2f} & {:10.4f}'.format(*x)
+#       
+#       print(ss + r'\\')
    

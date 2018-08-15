@@ -1,167 +1,91 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jun 26 13:19:19 2018
-
-@author: avelinojaver
-"""
-
-import sys
-sys.path.append('../../worm-ts-classification')
-
-sys.path.append('../../worm-autoencoder/')
-from worm_autoencoder.models import AE2D, AE2DWithSkels
-from worm_autoencoder.flow import FlowFromSampledSkels
-
-import torch
-import tables
 from pathlib import Path
-import torch
-#%%
+import pandas as pd
+import seaborn as sns
+from sklearn.manifold import TSNE
+import itertools
+from collections import defaultdict
+
 if __name__ == '__main__':
+    root_dir = Path('/Users/avelinojaver/OneDrive - Nexus365/papers/eccv2018/figures/output_embeddings/')
     
+    embeddings_files = {
+            'SWDB' : 'SWDB_angles_embeddings.csv',
+            'CeNDR' : 'CeNDR_angles_embeddings.csv'
+            }
     
-    
+    embeddings = {}
+    for set_name, fname in embeddings_files.items():
+        emb_df = pd.read_csv(str(root_dir / fname))
+        X = emb_df.iloc[:, 2:].values
+        X_embedded = TSNE(n_components=2, verbose=1).fit_transform(X)
+        df = pd.DataFrame(X_embedded, columns=['X1', 'X2'])
+        df['strain'] = emb_df.iloc[:, 1]
+        embeddings[set_name] = df
+        
     #%%
-    emb_model_root = Path('/Users/avelinojaver/Data/experiments/autoencoders/results')
-    AE_models_data = [('AE_emb32_20180613_l1' ,  AE2D, '20180613_174048_AE2D32_l1_adam_lr0.001_batch16'),
-                ('AE2DWithSkels32_emb32_20180620', AE2DWithSkels,'20180620_173601_AE2DWithSkels32_skel-1-1_adam_lr0.001_batch16'),
-                ]
-    
-    AE_models = {} 
-    for emb_t, mod_func, mod_name in AE_models_data:
-        model_path = emb_model_root / mod_name /  'checkpoint.pth.tar'
     
     
-        model = mod_func(32)
-        state = torch.load(model_path, map_location = 'cpu')
-        model.load_state_dict(state['state_dict'])
-        
-        AE_models[emb_t] = model
+    df = embeddings['CeNDR'].copy()
+    hue_order = df['strain'].unique()
+    gg = itertools.cycle('osv^')
+    mm = [v for _,v in zip(hue_order, gg)]
     
-    fname = '/Users/avelinojaver/Data/experiments/autoencoders/data/sampled/CeNDR_20180615_164245.hdf5'
-    gen = FlowFromSampledSkels(main_file=fname, is_shuffled = False)
-    gen.test()
+    ax = sns.lmplot('X1', 
+                    'X2', 
+                    hue='strain',
+                    data=df, 
+                    palette="colorblind", 
+                    markers=mm, 
+                    fit_reg=False,
+                    legend=False, 
+                    scatter_kws={"s": 30},
+                    size=4
+                    )
+    ax.add_legend(label_order = hue_order, title='')
+    plt.title('MW Dataset')
+    plt.savefig('MWtsne.pdf')
     #%%
-    tot_imgs = 15
+    df = embeddings['SWDB'].copy()
     
-    step = len(gen)//(tot_imgs-1)
+    wt_isolates = ['CB4852','CB4853','CB4856','ED3017','ED3021','ED3049',
+                   'ED3054','JU258','JU298','JU343','JU345','JU393','JU394',
+                   'JU402','JU438','JU440','LSJ1','MY16','PS312','RC301'
+                   ]
     
-    ll = [27558, 60001, 18878, 30295, 684,  95411]
-    #ll = [random.randint(0, len(gen)) for _ in range(tot_imgs)]
+    unc_strains = ["CB845","HH27","CB1460","CB933","AQ2936","AQ2937","CB262","CB57","CB4870","CB169","CB1069","CB587","VC1528","VC12","CB102","NM1657","FF41","HE130","CB4371","CB566","CB402","CB1068","MP145","CB101","CB1265","VC731","CB109","CB193","DR96","AQ2932","MT1093","CB755","CB1597","CB270","CB5","RB1316","CB81","CB94","AQ2935","AQ2933","CB723","CB189","CB120","AQ2613","DR1089","EG106","DR1","MT324","QT309","CB904","CB950","DR2","AQ2934","MT2611","SP1789","CB15","RW85","CB1416","CB1197","CB1598","CB151","VC854","MT1656","AQ1441"]
+    egl_strains = ["MT2068","AQ2316","MT2316","AQ916","KP2018","CE1047","MT1241","MT2246","JR2370","KS99","MT1079","MT6129","CF263","MT1067","MT1543","MT1202","MT2248","MT1216","MT155","MT1083","CB1313","MT1236","MT1200","MT1444","MT1081","MT2293","MT1232","MT1078","MT1217","MT8504","MT2247","MT1179","MT1205","MT1231","MT1082","MT151","MT1222","MT1540"]
     
-    print(ll)
     
-    X = []
-    skels = []
-    for ii in ll:
-        x, skel = gen[ii]
-        X.append(x)
-        skels.append(skel)
+    mm = defaultdict(lambda  : 'Others')
+    mm['N2_XX'] = 'N2 Hermaphrodite'
+    mm['N2_XO'] = 'N2 Male'
+    for wt in wt_isolates:
+        mm[wt + '_XX'] = 'Wild Isolates'
+    
+    for x in unc_strains:
+        mm[x + '_XX'] = 'Unc'
         
-        #plt.figure()
-        #plt.imshow(x.squeeze(), vmin=bot, vmax=top, cmap='gray')
-        #ss = (skel+0.5)*128
-        #plt.plot(ss[:,0], ss[:,1], 'r')
-    X = np.stack(X)
+    for x in egl_strains:
+        mm[x + '_XX'] = 'Egl'
     
-    Xc = torch.from_numpy(X)
-    Xhats = {}
-    with torch.no_grad():
-        for emb_t, model in AE_models.items():
-            emb = model.encoder(Xc)
-            Xhat = model.decoder(emb)
-            Xhats[emb_t] = Xhat.numpy()[:, 0]
-     
-    X0 = X[:, 0]
-    X1 = Xhats['AE_emb32_20180613_l1']
-    #X2 = Xhats['AE2DWithSkels32_emb32_20180620']
+    s_types = [mm[x] for x in df['strain']]
     
-    figsize = (X.shape[0]*2.8, 6)
+    df['strain'] = s_types
     
-    bot = np.min(X0)
-    top = np.max(X0)
-    fig, axs = plt.subplots(2, X.shape[0], figsize = figsize, sharex=True, sharey=True)
-    for ii in range(X0.shape[0]):
-        x0 = X0[ii]
-        x1 = X1[ii]
-        
-        axs[0][ii].imshow(x0, vmin=bot, vmax=top, cmap='gray')
-        axs[0][ii].axis('off')
-        
-        axs[1][ii].imshow(x1, vmin=bot, vmax=top, cmap='gray')
-        axs[1][ii].axis('off')
-    plt.subplots_adjust(wspace=0, hspace=0)
-    fig.savefig('AE_results.pdf')
+    hue_order = ['N2 Male', 'Wild Isolates', 'Unc', 'Egl', 'N2 Hermaphrodite', 'Others']
+    ax = sns.lmplot('X1', 'X2', 
+               data=df, 
+               fit_reg=False, 
+               hue='strain', 
+               hue_order=hue_order[::-1], 
+               legend_out=True, 
+               palette="Paired", 
+               scatter_kws={"s": 20},
+               legend=False,
+               size=4)
     
-    fig, axs = plt.subplots(2, X.shape[0], figsize = figsize, sharex=True, sharey=True)
-    for ii, (skel, x0, x1) in enumerate(zip(skels, X0, X1)):
-        ss = (skel+0.5)*128
-        cc = np.round(ss[5]).astype(np.int)
-        
-        off = 12
-        
-        x0s = x0[cc[1]-off:cc[1]+off, cc[0]-off:cc[0]+off]
-        axs[0][ii].imshow(x0s, vmin=bot, vmax=top, cmap='gray')
-        axs[0][ii].axis('off')
-        
-        x1s = x1[cc[1]-off:cc[1]+off, cc[0]-off:cc[0]+off]
-        axs[1][ii].imshow(x1s, vmin=bot, vmax=top, cmap='gray')
-        axs[1][ii].axis('off')
-    plt.subplots_adjust(wspace=0, hspace=0)
-    fig.savefig('AE_zoomed.pdf')
-    
-    #%%
-    if False:
-        emb_types = [
-            'skeletons',
-            'AE_emb32_20180613_l1', 
-            'AE2DWithSkels32_emb32_20180620'
-            ]
-    
-        row_id = 25
-        max_frame = 2500
-        data_x = {}
-        generators = {}
-        for emb_t in emb_types:
-            #fname, results_dir_root = get_path(emb_t)
-            fname = '/Users/avelinojaver/Data/experiments/classify_strains/CeNDR_{}.hdf5'.format(emb_t)
-            gen = SkelTrainer(fname = fname,
-                              is_divergent_set = False, 
-                              is_tiny = False,
-                                return_label = False, 
-                                return_snp = False,
-                                unsampled_test = True,
-                                sample_size = 22500,
-                                )
-            gen.test()
-            X, = gen[row_id]
-            
-            data_x[emb_t] = X
-            generators[emb_t] = gen
-        #%%
-        max_frame = 22500
-        
-        Xhats = {}
-        for emb_t, model in AE_models.items():
-        
-            X = data_x[emb_t]
-            
-            with torch.no_grad():
-                xx = X[0, :, ::100].T
-                xx = torch.from_numpy(xx)
-                
-                Xhat = model.decoder(xx)
-                Xhats[emb_t] = Xhat.numpy()[:, 0]
-                if 'skel' in emb_t.lower():   
-                    skelshat = model.regression(xx)
-        #%%
-        X1 = Xhats['AE_emb32_20180613_l1']
-        X2 = Xhats['AE2DWithSkels32_emb32_20180620']
-        for ii in range(0, X1.shape[0], 100):
-            fig, axs = plt.subplots(1,2, figsize=(12, 12) , sharex=True, sharey=True)
-            axs[0].imshow(X1[ii])
-            axs[1].imshow(X2[ii])
-        
-        
-    
+    ax.add_legend(label_order =[ 'N2 Hermaphrodite', 'N2 Male', 'Wild Isolates', 'Unc', 'Egl',  'Others'], title='')
+    plt.title('SW Dataset')
+    plt.savefig('SWtsne.pdf')

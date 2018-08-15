@@ -5,7 +5,7 @@ Created on Fri Nov 17 11:55:57 2017
 
 @author: ajaver
 """
-from .path import get_path
+from ..path import get_path
 import os
 
 import torch
