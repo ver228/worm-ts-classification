@@ -120,39 +120,127 @@ def get_accuracies(save_name, set_type, model_path, cuda_id=0):
 if __name__ == '__main__':
    cuda_id = 2
    save_dir = ''
-
+   
    all_args = [
-           ('SWDB_angles_week',
-             'SWDB_angles',
-             'logs/SWDB_angles_20180717_111958_R_simpledilated_week_sgd_lr0.001_wd0.0001_batch8'),
-            
+            ('CeNDR_angles',
+             'angles',
+             'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
+             ),
+            ('CeNDR_eigen',
+             'eigen',
+             'log_CeNDR/eigen_20180629_092428_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
+             ),
+             ('CeNDR_AE',
+              'AE_emb32_20180613_l1',
+              'log_CeNDR/AE_emb32_20180613_l1_20180627_235810_simpledilated_sgd_lr0.001_wd0.0001_batch8'
+             ),
+              
+             ('CeNDR_angles_resnet18',
+             'angles',
+             'logs/angles_20180817_113241_resnet18_sgd_lr0.0001_wd0.0001_batch8'
+             ),
+               
+             ('CeNDR_angles_resnet18_R',
+             'angles',
+              'logs/angles_20180819_084342_R_resnet18_sgd_lr0.0001_wd0.0001_batch8'
+              ),
+             ('CeNDR_angles_resnet18-freeze5',
+             'angles',
+             'logs/angles_20180817_115207_resnet18-freeze5_sgd_lr0.0001_wd0.0001_batch8'
+             ),
+             ('CeNDR_angles_resnet18-freeze6',
+             'angles',
+             'logs/angles_20180817_115548_resnet18-freeze6_sgd_lr0.0001_wd0.0001_batch8'
+             ),
+             ('CeNDR_angles_resnet18-freeze7',
+             'angles',
+             'logs/angles_20180817_115054_resnet18-freeze7_sgd_lr0.0001_wd0.0001_batch8'
+             ),
+             ('CeNDR_angles_resnet18-freeze8',
+             'angles',
+             'logs/angles_20180817_115207_resnet18-freeze8_sgd_lr0.0001_wd0.0001_batch8'
+             ),
+             ('CeNDR_angles_resnet34',
+             'angles',
+             'logs/angles_20180817_113316_resnet34_sgd_lr0.0001_wd0.0001_batch8'
+             ),
+             
+              
              ('SWDB_angles',
              'SWDB_angles',
              'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
              ),
-            
-            ('SWDB_eigen',
+             ('SWDB_angles_resnet18',
+             'SWDB_angles',
+             'logs/SWDB_angles_20180808_143338_resnet18_sgd_lr0.0001_wd0.0001_batch8'
+             ),
+             ('SWDB_angles_resnet34',
+             'SWDB_angles',
+             'logs/SWDB_angles_20180808_143839_resnet34_sgd_lr0.0001_wd0.0001_batch8'
+             ),
+             ('SWDB_angles_vgg11bn',
+             'SWDB_angles',
+             'logs/SWDB_angles_20180808_145049_vgg11bn_sgd_lr0.0001_wd0.0001_batch4'
+             ),
+              
+             ('SWDB_eigen',
              'SWDB_eigen',
              'log_SWDB_eigen/SWDB_eigen_20180711_214829_R_simpledilated_sgd_lr0.001_wd0.0001_batch8'
-             ),
-            ('SWDB_eigen_week',
+             ),              
+             ('SWDB_eigen_resnet18',
              'SWDB_eigen',
-             'log_SWDB_eigen/SWDB_eigen_20180705_084034_simpledilated_week_sgd_lr0.001_wd0.0001_batch8'
+             'logs/SWDB_eigen_20180808_145425_resnet18_sgd_lr0.0001_wd0.0001_batch8'
              ),
-            
-            ('CeNDR_angles',
+             ('SWDB_eigen_resnet34',
+             'SWDB_eigen',
+             'logs/SWDB_eigen_20180808_145216_resnet34_sgd_lr0.0001_wd0.0001_batch8'
+             ),              
+             
+             ('CeNDR frozen from SWDB',
              'angles',
-             'log_divergent_set/angles_20180524_115242_simpledilated_div_lr0.0001_batch8'
-             ),
-            ('CeNDR_eigen',
-             'eigen',
-             'done/log_divergent_set/eigen_20180627_181554_simpledilated_div_adam_lr0.0001_wd0_batch8'
-             ),
-             ('CeNDR_AE',
-              'AE_emb32_20180613_l1',
-              'done/log_divergent_set/AE_emb32_20180613_l1_20180620_103134_simpledilated1d_div_adam_lr1e-05_wd0_batch8'
-             )             
-            ]
+             'logs/angles_20180816_221100_pretrainedcross-freeze20_sgd_lr0.0001_wd0.0001_batch8'
+             ),  
+             ('SWDB frozen from CeNDR',
+             'SWDB_angles',
+             'logs/SWDB_angles_20180816_221256_pretrainedcross-freeze20_sgd_lr0.0001_wd0.0001_batch8'
+             )
+             
+             ]
+
+
+
+#   all_args = [
+#           ('SWDB_angles_week',
+#             'SWDB_angles',
+#             'logs/SWDB_angles_20180717_111958_R_simpledilated_week_sgd_lr0.001_wd0.0001_batch8'),
+#            
+#             ('SWDB_angles',
+#             'SWDB_angles',
+#             'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#            
+#            ('SWDB_eigen',
+#             'SWDB_eigen',
+#             'log_SWDB_eigen/SWDB_eigen_20180711_214829_R_simpledilated_sgd_lr0.001_wd0.0001_batch8'
+#             ),
+#            ('SWDB_eigen_week',
+#             'SWDB_eigen',
+#             'log_SWDB_eigen/SWDB_eigen_20180705_084034_simpledilated_week_sgd_lr0.001_wd0.0001_batch8'
+#             ),
+#            
+#            ('CeNDR_angles',
+#             'angles',
+#             'log_divergent_set/angles_20180524_115242_simpledilated_div_lr0.0001_batch8'
+#             ),
+#            ('CeNDR_eigen',
+#             'eigen',
+#             'done/log_divergent_set/eigen_20180627_181554_simpledilated_div_adam_lr0.0001_wd0_batch8'
+#             ),
+#             ('CeNDR_AE',
+#              'AE_emb32_20180613_l1',
+#              'done/log_divergent_set/AE_emb32_20180613_l1_20180620_103134_simpledilated1d_div_adam_lr1e-05_wd0_batch8'
+#             )             
+#            ]
 #   all_args = [
 #            ('CeNDR_vgg16bn',
 #             'angles',
@@ -180,7 +268,6 @@ if __name__ == '__main__':
 #             'log_divergent_set/angles_20180524_115242_simpledilated_div_lr0.0001_batch8'
 #             ),
 #             ]
-   
    _, results_dir_root = get_path('')
    save_dir = Path(results_dir_root) / 'summary'
    save_dir.mkdir(parents=True, exist_ok=True)

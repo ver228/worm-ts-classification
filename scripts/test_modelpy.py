@@ -27,7 +27,7 @@ if __name__ == '__main__':
     
     fname, results_dir_root = get_path(set_type)
     
-    model_path = os.path.join(results_dir_root, 'logs/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8/model_best.pth.tar')
+    model_path = os.path.join(results_dir_root, 'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8/model_best.pth.tar')
     #model_path = os.path.join(results_dir_root, 'log_divergent_set/angles_20180524_115242_simpledilated_div_lr0.0001_batch8/model_best.pth.tar')
     
     #model_path = os.path.join(results_dir_root, 'log_divergent_set_snp/angles_20180524_222349_simpledilated_div_lr0.0001_batch8/model_best.pth.tar')
@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
             all_res.append((y_in.item(), res.item()))
             #print('T:', y_in, 'R:', )
-    
+            break
     target, predictions = np.array(all_res).T
     acc = (target == predictions).mean()
     print('acc : {}'.format(acc))

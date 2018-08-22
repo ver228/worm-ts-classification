@@ -424,47 +424,7 @@ class SimpleDilated1D(nn.Module):
         x = self.fc_clf(x)
         return x    
 #%%
-        
-class SWDBSimpleDilated(nn.Module):
-    def __init__(self, num_classes, 
-                 dropout_fc = 0.5, 
-                 use_maxpooling = False,
-                 init_model_path = None,
-                 freeze_SWDB = True
-                 ):
-        super().__init__()
-        
-        if init_model_path is None:
-            #init_model_path = 'log_SWDB_angles/SWDB_angles_20180627_184430_simpledilated_sgd_lr0.001_wd0.0001_batch8/model_best.pth.tar'
-            init_model_path = 'log_SWDB_angles/SWDB_angles_20180711_211823_simpledilated_week_sgd_lr0.001_wd0.0001_batch8/model_best.pth.tar'
 
-        _, results_dir_root = get_path('')
-        init_model_path = os.path.join(results_dir_root, init_model_path)
-        
-        self.SWDB_model = SimpleDilated(365)
-        state = torch.load(init_model_path, map_location = 'cpu')
-        self.SWDB_model.load_state_dict(state['state_dict'])
-        self.SWDB_model.eval()
-        
-        if  freeze_SWDB:
-            for param in self.SWDB_model.parameters():
-                param.requires_grad = False
-        
-        pooling_func = nn.AdaptiveMaxPool2d(1) if use_maxpooling  else nn.AdaptiveAvgPool2d(1)
-        
-        num_maps = self.SWDB_model.cnn_clf[-1][0].weight.shape[0]
-        self.fc_clf = nn.Sequential(
-                pooling_func,  
-                nn.Dropout(dropout_fc),
-                nn.Conv2d(num_maps, num_classes, kernel_size=1,
-                                stride=1, padding=0, bias=True),
-                Flatten()
-                )
-        
-    def forward(self, x):
-        x = self.SWDB_model.cnn_clf(x)
-        x = self.fc_clf(x)
-        return x  
 #%%            
 if __name__ == '__main__':
     from flow import collate_fn, SkelTrainer

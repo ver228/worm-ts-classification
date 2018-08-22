@@ -11,7 +11,7 @@ src_d = pathlib.Path(__file__).resolve().parents
 sys.path.append(str(src_d))
 
 from .models import CNNClf, CNNClf1D, Darknet, SimpleDilated, \
-SimpleDilated1D, drn111111, SWDBSimpleDilated, SqueezeNetP, ResNetP, VGGP
+SimpleDilated1D, drn111111, SqueezeNetP, ResNetP, VGGP, PretrainedSimpleDilated
 from .flow import collate_fn, SkelTrainer
 from .path import get_path
 
@@ -75,7 +75,7 @@ def copy_data_to_tmp(fname, copy_tmp):
         shutil.copyfile(fname, new_fname)
     return new_fname
 #%%
-def get_model(model_name, num_classes, embedding_size):
+def get_model(model_name, num_classes, embedding_size, pretrained_path=None):
     def _getlayers2freeze(x):
         #'resnet18-freeze13'
         parts = x.split('-')
@@ -102,10 +102,6 @@ def get_model(model_name, num_classes, embedding_size):
         model = SimpleDilated(num_classes, use_maxpooling=True)
     elif model_name == 'simpledilated1d':
         model = SimpleDilated1D(embedding_size, num_classes)
-    elif model_name == 'swdbsimpledilated':
-        model = SWDBSimpleDilated(num_classes, freeze_SWDB=True)
-    elif model_name == 'swdbsimpledilatedunfreeze':
-        model = SWDBSimpleDilated(num_classes, freeze_SWDB=False)
     elif model_name.startswith('squeezenet'):
         #'squeezenet1.0-freeze13'
         bn, n_layers2freeze = _getlayers2freeze(model_name)
@@ -116,8 +112,13 @@ def get_model(model_name, num_classes, embedding_size):
     elif model_name.startswith('vgg'):
         bn, n_layers2freeze = _getlayers2freeze(model_name)
         model = VGGP(bn, num_classes, n_layers2freeze)
+    elif model_name.startswith('pretrainedcross'):
+        bn, n_layers2freeze = _getlayers2freeze(model_name)
+        model = PretrainedSimpleDilated(pretrained_path, num_classes, n_layers2freeze)
+
     else:
         raise ValueError('Invalid model name {}'.format(model_name))
+
     return model
 #%%
 class Trainer():
@@ -134,7 +135,8 @@ class Trainer():
                 root_prefix = None, 
                 copy_tmp = None,
                 init_model_path = None,
-                
+                pretrained_path = None,
+
                 is_balance_training = True,
                 is_tiny = False,
                 is_divergent_set = False,
@@ -191,9 +193,14 @@ class Trainer():
         
         
         self.embedding_size = self.gen.embedding_size
-        self.model = get_model(model_name, self.num_classes, self.embedding_size)
+
+
+        if pretrained_path:
+            pretrained_path = os.path.join(self.results_dir_root, pretrained_path, 'model_best.pth.tar')
+        self.model = get_model(model_name, self.num_classes, self.embedding_size, pretrained_path)
         
         if init_model_path:
+            #load weights if the model is not pretrained
             assert set_type in init_model_path
             if not os.path.exists(init_model_path):
                 init_model_path = os.path.join(self.results_dir_root, init_model_path)

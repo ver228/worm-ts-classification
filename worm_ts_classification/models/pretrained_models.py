@@ -8,8 +8,9 @@ basedir = get_base_dir()
 pretrained_path = os.path.join(basedir, 'pretrained_models')
 os.environ['TORCH_MODEL_ZOO'] = pretrained_path
 
-from .models import Flatten
+from .models import Flatten, SimpleDilated
 
+import torch
 from torch import nn
 import torchvision
 
@@ -94,6 +95,36 @@ class VGGP(BasePretrained):
         model_base = _vggs[model_name](pretrained=pretrained)
         features_module = model_base.features
         super().__init__(features_module, num_classes, n_layers2freeze, num_feat_maps, **argwks)
+
+        
+class PretrainedSimpleDilated(BasePretrained):
+    def __init__(self, 
+                 pretrained_path,
+                 num_classes, 
+                 n_layers2freeze = None,
+                 **argkws
+                 ):
+        
+        num_feat_maps = 512
+        assert pretrained_path is not None
+
+        state = torch.load(pretrained_path, map_location = 'cpu')
+        
+        old_num_classes = state['state_dict']['fc_clf.2.bias'].shape[0]
+        
+        
+        old_model = SimpleDilated(old_num_classes)
+        old_model.load_state_dict(state['state_dict'])
+        old_model.eval()
+        
+        features_module = old_model.cnn_clf
+        super().__init__(features_module, num_classes, n_layers2freeze, num_feat_maps, **argkws)
+
+        
+    def forward(self, x_in):
+        feats = self.features(x_in)
+        x_out = self.fc_clf(feats)
+        return x_out
 
 if __name__ == '_main__':
     pass

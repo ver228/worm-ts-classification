@@ -41,8 +41,10 @@ def get_embeddings(save_name, set_type, model_path):
     print(dev_str)
     device = torch.device(dev_str)
 
-    return_label = True
-    return_snp = False
+    
+    return_snp = 'snp' in model_path
+    return_label = not return_snp
+    
     unsampled_test = True
     is_divergent_set = 'divergent_set' in model_path
     
@@ -50,7 +52,8 @@ def get_embeddings(save_name, set_type, model_path):
                       is_divergent_set = is_divergent_set,
                       return_label = return_label,
                       return_snp = return_snp,
-                      unsampled_test = unsampled_test)
+                      unsampled_test = unsampled_test,
+                      train_epoch_magnifier=1)
 
     model = get_model(model_name, gen.num_classes, gen.embedding_size)
     model = model.to(device)
@@ -60,8 +63,11 @@ def get_embeddings(save_name, set_type, model_path):
     print(state['epoch'])
     model.load_state_dict(state['state_dict'])
     model.eval()
-
-    gen.test()
+    
+    if save_name.endswith('_TRAIN'):
+        gen.train()
+    else:
+        gen.test()
     test_indexes = gen.valid_index
     
     all_embeddings = []
@@ -73,7 +79,11 @@ def get_embeddings(save_name, set_type, model_path):
             x_in = gen._get_data(vid_id)[None, None, :, :]
             X = torch.from_numpy(x_in).to(device)
             
-            maps = model.cnn_clf(X)
+            try:
+                maps = model.cnn_clf(X)
+            except AttributeError:
+                maps = model.features(X.repeat(1,3,1,1))
+            
             emb = model.fc_clf[:1](maps).squeeze()
             
             emb = emb.cpu().detach().numpy()
@@ -86,18 +96,42 @@ def get_embeddings(save_name, set_type, model_path):
     df.to_csv(str(fname))
 #%%
 if __name__ == '__main__':
-   cuda_id = 2
+   cuda_id = 0
    save_dir = ''
 
    all_args = [
-            ('CeNDR_angles',
+#            ('CeNDR_div_angles',
+#             'angles',
+#             'log_divergent_set/angles_20180524_115242_simpledilated_div_lr0.0001_batch8'
+#             ),
+#            ('SWDB_angles',
+#             'SWDB_angles',
+#             'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+             ('CeNDR_angles_TRAIN',
              'angles',
-             'log_divergent_set/angles_20180524_115242_simpledilated_div_lr0.0001_batch8'
+             'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
              ),
-            ('SWDB_angles',
+            ('SWDB_angles_TRAIN',
              'SWDB_angles',
              'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
              ),
+#             ('CeNDR_angles',
+#             'angles',
+#             'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
+#             ),
+#            ('CeNDR_angles_snp',
+#             'angles',
+#             'logs_snp/angles_20180524_222950_simpledilated_lr0.0001_batch8'
+#             )
+#             ('SWDB_angles_resnet18',
+#             'SWDB_angles',
+#             'logs/SWDB_angles_20180808_143338_resnet18_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             ('CeNDR_angles_resnet18',
+#             'angles',
+#             'logs/angles_20180819_084342_R_resnet18_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
            ]
    
    

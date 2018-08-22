@@ -23,8 +23,6 @@ import numpy  as np
 
 import tqdm
 
-
-
 #%%
 if __name__ == '__main__':
    cuda_id = 2
@@ -33,16 +31,20 @@ if __name__ == '__main__':
    set_data = { 
             'SWDB':(
              'SWDB_angles',
-             'logs/SWDB_angles_20180807_192205_simpledilated_WTcommon_sgd_lr0.001_wd0.0001_batch8'
+             #'logs/SWDB_angles_20180807_192205_simpledilated_WTcommon_sgd_lr0.001_wd0.0001_batch8'
              #'logs/SWDB_angles_20180717_111958_R_simpledilated_week_sgd_lr0.001_wd0.0001_batch8'
              #'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
+             'logs/SWDB_angles_20180808_143338_resnet18_sgd_lr0.0001_wd0.0001_batch8'
              ),
             
             
             'CeNDR':(
              'angles',
-             'logs/angles_20180808_104650_simpledilated_WTcommon_adam_lr0.0001_wd0_batch8'
+             #'logs/angles_20180808_104650_simpledilated_WTcommon_adam_lr0.0001_wd0_batch8'
              #'log_divergent_set/angles_20180524_115242_simpledilated_div_lr0.0001_batch8'
+             #'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
+             #'logs/angles_20180815_101615_resnet18_adam_lr0.0001_wd0.0001_batch8'
+             'logs/angles_20180819_084342_R_resnet18_sgd_lr0.0001_wd0.0001_batch8'
              )
              
             }
@@ -125,7 +127,7 @@ if __name__ == '__main__':
             
        #%%
        df = pd.DataFrame(all_res, columns=['target_strain', 'predicted_strain_same', 'predicted_strain_diff'])
-       save_name = save_dir / 'S_Base={}-Diff={}.csv'.format(trained_set, test_set)
+       save_name = save_dir / 'R_Base={}-Diff={}.csv'.format(trained_set, test_set)
        df.to_csv(str(save_name))
 #%%
 #       summary, df = get_accuracies(*args)

@@ -12,17 +12,19 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix
 #%%
 if __name__ == '__main__':
-    root_dir = Path('/Users/avelinojaver/OneDrive - Nexus365/papers/eccv2018/figures/output_embeddings/')
+    root_dir = Path('/Users/avelinojaver/OneDrive - Nexus365/papers/pheno_progress/cross_accuracy/')
     #%%
     prediction_files = {
-            'SWDB on CeNDR' : 'Base=SWDB-Diff=CeNDR.csv',
-            'CeNDR on SWDB' : 'Base=CeNDR-Diff=SWDB.csv',
-            'S SWDB on CeNDR' : 'S_Base=SWDB-Diff=CeNDR.csv',
-            'S CeNDR on SWDB' : 'S_Base=CeNDR-Diff=SWDB.csv',
+            ('all', 'SWDB', 'CeNDR') : 'all_Base=SWDB-Diff=CeNDR.csv',
+            ('all', 'CeNDR', 'SWDB'): 'all_Base=CeNDR-Diff=SWDB.csv',
+            ('small', 'SWDB', 'CeNDR'): 'small_Base=SWDB-Diff=CeNDR.csv',
+            ('small', 'CeNDR', 'SWDB') : 'small_Base=CeNDR-Diff=SWDB.csv',
+            ('resnet18', 'SWDB', 'CeNDR'): 'resnet18_Base=SWDB-Diff=CeNDR.csv',
+            ('resnet18', 'CeNDR', 'SWDB') : 'resnet18_Base=CeNDR-Diff=SWDB.csv',
             }
     
     
-    for d_type, fname in prediction_files.items():
+    for (d_type, s_trained, s_flow), fname in prediction_files.items():
         fname = root_dir / fname
         
         df = pd.read_csv(fname)
@@ -31,23 +33,38 @@ if __name__ == '__main__':
         df = df.applymap(lambda x : x.partition('_')[0])
         
         
+        df.columns = [' '.join([x.title() for x in col.split('_')]) for col in df.columns]
         
-        y_true = df['target_strain']
         
-        fig, axs = plt.subplots(1,2, figsize=(10, 5))
-        for ii, xx in enumerate(['predicted_strain_same', 'predicted_strain_diff']):
-            y_pred = df[xx]
+        y_true = df['Target Strain']
+        
+        
+        for ii, col in enumerate(['Predicted Strain Same', 'Predicted Strain Diff']):
+            y_pred = df[col]
             df_confusion = pd.crosstab(y_true, y_pred)
             
             valid_strains = df_confusion.index.values
             df_n = df_confusion.div(df_confusion.sum(axis=1), axis=0)
             
-            if ii == 0:
-                df_n = df_n.loc[:, valid_strains]
+            df_n = df_n.loc[:, valid_strains]
             df_n[df_n.isnull()] = 0
-            sns.heatmap(df_n, annot=True, cbar=False, ax=axs[ii])
+            fig, axs = plt.subplots(1,1, figsize=(4,4))
+            sns.heatmap(df_n, annot=True, cbar=False, ax=axs, vmin=0, vmax=1)
+            
+            
+            end_s = col.rpartition(' ')[-1]
+            if end_s == 'Diff':
+                ss = '{}-train={}-source={}'.format(d_type, s_trained, s_flow)
+            else:
+                ss = '{}-train={}-source={}'.format(d_type, s_flow, s_flow)
+            
+            
+            plt.suptitle(ss)
+            
+            ss = ss.replace(' ', '_')
+            fig.savefig(ss + '.pdf')
             #(y_true==y_pred).sum()/len(df)
             
-        plt.suptitle(d_type)
+        #
         
         

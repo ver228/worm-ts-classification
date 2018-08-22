@@ -155,7 +155,7 @@ class SkelEmbeddingsFlow(Dataset):
         
     
     def _get_data(self, vid_id):
-        if self.is_train or not self.unsampled_test:
+        if not self.unsampled_test:
             dat = self._sample_video(vid_id)
         else:
             dat = self._full_video(vid_id)
