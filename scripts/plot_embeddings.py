@@ -8,6 +8,10 @@ import itertools
 from collections import defaultdict
 
 if __name__ == '__main__':
+    divergent_set = ['CB4856', 'CX11314', 'DL238', 'ED3017', 'EG4725', 'JT11398',
+           'JU258', 'JU775', 'LKC34', 'MY16', 'MY23', 'N2']
+    
+    
     root_dir = Path('/Users/avelinojaver/OneDrive - Nexus365/papers/pheno_progress/output_embeddings/')
     
     embeddings_files = {
@@ -29,6 +33,19 @@ if __name__ == '__main__':
         df = pd.DataFrame(X_embedded, columns=['X1', 'X2'])
         df['strain'] = emb_df.iloc[:, 1]
         embeddings[set_name] = df
+    #%%
+    titles_d = {
+            'Tierpsy' : 'Tierpsy Features',
+            'Tierpsy_Divergent' : 'Tierpsy Features Divergent Set',
+            'SWDB' : 'SW',
+            'SWDB_resnet18' : 'SWDB_resnet18',
+            'SWDB_TRAIN' : 'SWDB_TRAIN',
+            'CeNDR_div' : 'MW',
+            'CeNDR' : 'MWv2',
+            'CeNDR_SNP' : 'MWv2 + SNP',
+            'CeNDR_resnet18' : 'CeNDR_resnet18',
+            'CeNDR_TRAIN' : 'CeNDR_TRAIN'
+            }
     
     #%%
     fname = '/Users/avelinojaver/OneDrive - Imperial College London/tierpsy_features/classify/data/CeNDR/F0.025_tierpsy_features_full_CeNDR.csv'
@@ -48,7 +65,7 @@ if __name__ == '__main__':
     df_r = emb_df[col_feats]
     emb_df[col_feats] = (df_r - df_r.mean())/df_r.std()
     emb_df = emb_df[['strain'] + sorted(col_feats)]
-    
+    #%%
     X = emb_df.iloc[:, 2:].values
     X_embedded = TSNE(n_components=2, verbose=1).fit_transform(X)
     df = pd.DataFrame(X_embedded, columns=['X1', 'X2'])
@@ -56,10 +73,20 @@ if __name__ == '__main__':
     embeddings['Tierpsy'] = df
     
     #%%
-    for set_s in ['Tierpsy', 'CeNDR', 'CeNDR_SNP', 'CeNDR_resnet18', 'CeNDR_TRAIN']:
+    
+    emb_df = emb_df[emb_df['strain'].isin(divergent_set)]
+    emb_df = emb_df.reset_index(drop=True)
+    #%%
+    X = emb_df.iloc[:, 2:].values
+    X_embedded = TSNE(n_components=2, verbose=1).fit_transform(X)
+    df = pd.DataFrame(X_embedded, columns=['X1', 'X2'])
+    df['strain'] = emb_df.iloc[:, 0]
+    embeddings['Tierpsy_Divergent'] = df
+    
+    #%%
+    for set_s in ['Tierpsy_Divergent', 'Tierpsy', 'CeNDR', 'CeNDR_SNP', 'CeNDR_resnet18', 'CeNDR_TRAIN']:
         df = embeddings[set_s].copy()
-        divergent_set = ['CB4856', 'CX11314', 'DL238', 'ED3017', 'EG4725', 'JT11398',
-           'JU258', 'JU775', 'LKC34', 'MY16', 'MY23', 'N2']
+        
         
         df['strain'] = [x if x in divergent_set else 'Others' for x in df['strain']  ]
         
@@ -81,8 +108,11 @@ if __name__ == '__main__':
                         size=4, 
                         )        
         ax.add_legend(label_order = hue_order, title='')
-        plt.title(set_s + ' Dataset')
+        
+        tt = titles_d[set_s]
+        plt.title(tt)
         plt.savefig(set_s + 'tsne.pdf')
+        
     #%%
     
     df = embeddings['CeNDR_div'].copy()

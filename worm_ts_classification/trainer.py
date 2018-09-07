@@ -11,7 +11,8 @@ src_d = pathlib.Path(__file__).resolve().parents
 sys.path.append(str(src_d))
 
 from .models import CNNClf, CNNClf1D, Darknet, SimpleDilated, \
-SimpleDilated1D, drn111111, SqueezeNetP, ResNetP, VGGP, PretrainedSimpleDilated
+SimpleDilated1D, drn111111, SqueezeNetP, ResNetP, VGGP, DenseNetP, \
+PretrainedSimpleDilated
 from .flow import collate_fn, SkelTrainer
 from .path import get_path
 
@@ -112,6 +113,10 @@ def get_model(model_name, num_classes, embedding_size, pretrained_path=None):
     elif model_name.startswith('vgg'):
         bn, n_layers2freeze = _getlayers2freeze(model_name)
         model = VGGP(bn, num_classes, n_layers2freeze)
+    elif model_name.startswith('densenet'):
+        bn, n_layers2freeze = _getlayers2freeze(model_name)
+        model = DenseNetP(bn, num_classes, n_layers2freeze)
+    
     elif model_name.startswith('pretrainedcross'):
         bn, n_layers2freeze = _getlayers2freeze(model_name)
         model = PretrainedSimpleDilated(pretrained_path, num_classes, n_layers2freeze)

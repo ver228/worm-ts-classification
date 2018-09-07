@@ -150,28 +150,34 @@ if __name__ == '__main__':
     p = 'osx' if sys.platform == 'darwin' else 'centos_oxford'
     root = _root_dirs[p]
 
-    set_type = 'SWDB'
-    root_dir = str(Path.home() / 'workspace' / 'WormData' / 'screenings')
-    f_ext = '_interpolated25.hdf5'
-    col_label = 'skeleton_id'
-    embeddings_field = '/coordinates/skeletons' 
+    # set_type = 'SWDB'
+    # root_dir = str(Path.home() / 'workspace' / 'WormData' / 'screenings')
+    # f_ext = '_interpolated25.hdf5'
+    # col_label = 'skeleton_id'
+    # embeddings_field = '/coordinates/skeletons' 
 
     
-#    set_type = 'CeNDR'
-#    
-#    root_dir = root + 'screenings/CeNDR/Results'
-#    f_ext = '_featuresN.hdf5'
-#    col_label = 'skeleton_id'
-#    embeddings_field = '/coordinates/skeletons'
-#    
-#    emb_set = 'angles'
-#    n_embeddings = 48
+   # set_type = 'CeNDR'
+   # root_dir = root + 'screenings/CeNDR/Results'
+   # f_ext = '_featuresN.hdf5'
+   # col_label = 'skeleton_id'
+   # embeddings_field = '/coordinates/skeletons'
+
+
+   set_type = 'AggCeNDR'
+   root_dir = root + 'screenings/Serena_WT_Screening/Results'
+   f_ext = '_featuresN.hdf5'
+   col_label = 'skeleton_id'
+   embeddings_field = '/coordinates/skeletons'
+
+   emb_set = 'angles'
+   n_embeddings = 48
     
 #    emb_set = 'skeletons'
 #    n_embeddings = 49*2
     
-    emb_set = 'eigen'
-    n_embeddings = 6
+#    emb_set = 'eigen'
+#    n_embeddings = 6
 
 #    emb_set = 'eigenfull'
 #    n_embeddings = 10  

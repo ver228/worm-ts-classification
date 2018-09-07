@@ -120,8 +120,21 @@ def get_accuracies(save_name, set_type, model_path, cuda_id=0):
 if __name__ == '__main__':
    cuda_id = 2
    save_dir = ''
+#   
+#   frozen_cross_paths ={
+#           'SWDB frozen from CeNDR' : 
+#           'CeNDR frozen from SWDB' : 
+#           }
    
    all_args = [
+             ('CeNDR frozen from SWDB',
+             'angles',
+             'logs/angles_20180816_221100_pretrainedcross-freeze20_sgd_lr0.0001_wd0.0001_batch8'
+             ),  
+             ('SWDB frozen from CeNDR',
+             'SWDB_angles',
+             'logs/SWDB_angles_20180816_221256_pretrainedcross-freeze20_sgd_lr0.0001_wd0.0001_batch8'
+             ),
             ('CeNDR_angles',
              'angles',
              'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
@@ -194,15 +207,6 @@ if __name__ == '__main__':
              ('SWDB_eigen_resnet34',
              'SWDB_eigen',
              'logs/SWDB_eigen_20180808_145216_resnet34_sgd_lr0.0001_wd0.0001_batch8'
-             ),              
-             
-             ('CeNDR frozen from SWDB',
-             'angles',
-             'logs/angles_20180816_221100_pretrainedcross-freeze20_sgd_lr0.0001_wd0.0001_batch8'
-             ),  
-             ('SWDB frozen from CeNDR',
-             'SWDB_angles',
-             'logs/SWDB_angles_20180816_221256_pretrainedcross-freeze20_sgd_lr0.0001_wd0.0001_batch8'
              )
              
              ]

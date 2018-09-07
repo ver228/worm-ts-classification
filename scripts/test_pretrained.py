@@ -11,7 +11,7 @@ sys.path.append('../../worm-ts-classification')
 
 from worm_ts_classification.path import get_path
 from worm_ts_classification.flow import SkelTrainer, collate_fn
-from worm_ts_classification.models import ResNetP, SqueezeNetP, VGGP, PretrainedSimpleDilated
+from worm_ts_classification.models import ResNetP, SqueezeNetP, VGGP, DenseNetP, PretrainedSimpleDilated
 from worm_ts_classification.models.pretrained_models import _vggs
 import os
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
                       is_tiny = False,
                         return_label = True, 
                         return_snp = False,
-                        unsampled_test = True,
+                        unsampled_test = False,
                         sample_size = 22500,
                         is_only_WT = False
                         )
@@ -50,6 +50,10 @@ if __name__ == '__main__':
     
     for X,y in tqdm.tqdm(loader):
         break
+    #%%
+    mod_densenet = DenseNetP('densenet169', gen.num_classes)
+    pred = mod_densenet(X)
+    
     #%%
     pretrained_path = 'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
     _, results_dir_root = get_path('')

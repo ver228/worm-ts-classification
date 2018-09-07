@@ -15,12 +15,12 @@ if __name__ == '__main__':
     root_dir = Path('/Users/avelinojaver/OneDrive - Nexus365/papers/pheno_progress/cross_accuracy/')
     #%%
     prediction_files = {
-            ('all', 'SWDB', 'CeNDR') : 'all_Base=SWDB-Diff=CeNDR.csv',
-            ('all', 'CeNDR', 'SWDB'): 'all_Base=CeNDR-Diff=SWDB.csv',
-            ('small', 'SWDB', 'CeNDR'): 'small_Base=SWDB-Diff=CeNDR.csv',
-            ('small', 'CeNDR', 'SWDB') : 'small_Base=CeNDR-Diff=SWDB.csv',
-            ('resnet18', 'SWDB', 'CeNDR'): 'resnet18_Base=SWDB-Diff=CeNDR.csv',
-            ('resnet18', 'CeNDR', 'SWDB') : 'resnet18_Base=CeNDR-Diff=SWDB.csv',
+            ('All', 'SW', 'MWv2') : 'all_Base=SWDB-Diff=CeNDR.csv',
+            ('All', 'MWv2', 'SW'): 'all_Base=CeNDR-Diff=SWDB.csv',
+            ('5 Strains', 'SW', 'MWv2'): 'small_Base=SWDB-Diff=CeNDR.csv',
+            ('5 Strains', 'MWv2', 'SW') : 'small_Base=CeNDR-Diff=SWDB.csv',
+            ('resnet18', 'SW', 'MWv2'): 'resnet18_Base=SWDB-Diff=CeNDR.csv',
+            ('resnet18', 'MWv2', 'SW') : 'resnet18_Base=CeNDR-Diff=SWDB.csv',
             }
     
     
@@ -54,14 +54,14 @@ if __name__ == '__main__':
             
             end_s = col.rpartition(' ')[-1]
             if end_s == 'Diff':
-                ss = '{}-train={}-source={}'.format(d_type, s_trained, s_flow)
+                ss = '{}, train:{} source:{}'.format(d_type, s_trained, s_flow)
             else:
-                ss = '{}-train={}-source={}'.format(d_type, s_flow, s_flow)
+                ss = '{}, train:{} source:{}'.format(d_type, s_flow, s_flow)
             
             
             plt.suptitle(ss)
             
-            ss = ss.replace(' ', '_')
+            ss = ss.replace(' ', '_').replace(':', '-')
             fig.savefig(ss + '.pdf')
             #(y_true==y_pred).sum()/len(df)
             

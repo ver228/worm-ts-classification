@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from ..path import get_base_dir
-
 import os
+from pathlib import Path
 
-basedir = get_base_dir()
-pretrained_path = os.path.join(basedir, 'pretrained_models')
+pretrained_path = str(Path.home() / 'workspace/pytorch/pretrained_models/')
 os.environ['TORCH_MODEL_ZOO'] = pretrained_path
 
 from .models import Flatten, SimpleDilated
@@ -33,6 +31,11 @@ _vggs = {'vgg11bn' :torchvision.models.vgg11_bn,
          'vgg13bn' :torchvision.models.vgg13_bn,
          'vgg16bn' :torchvision.models.vgg16_bn,
          'vgg19bn' :torchvision.models.vgg19_bn,
+        }
+
+_densenets = {
+        'densenet121' :torchvision.models.densenet121,
+        'densenet169' : torchvision.models.densenet169,
         }
 
 class BasePretrained(nn.Module):
@@ -96,6 +99,16 @@ class VGGP(BasePretrained):
         features_module = model_base.features
         super().__init__(features_module, num_classes, n_layers2freeze, num_feat_maps, **argwks)
 
+
+class DenseNetP(BasePretrained):
+    def __init__(self, model_name, num_classes, n_layers2freeze = None, pretrained=True, **argwks):
+        
+        num_feat_maps = 1024
+        model_base = _densenets[model_name](pretrained=pretrained)
+        features_module = model_base.features
+        super().__init__(features_module, num_classes, n_layers2freeze, num_feat_maps, **argwks)
+        
+        
         
 class PretrainedSimpleDilated(BasePretrained):
     def __init__(self, 
@@ -106,17 +119,19 @@ class PretrainedSimpleDilated(BasePretrained):
                  ):
         
         num_feat_maps = 512
-        assert pretrained_path is not None
-
-        state = torch.load(pretrained_path, map_location = 'cpu')
         
-        old_num_classes = state['state_dict']['fc_clf.2.bias'].shape[0]
-        
-        
-        old_model = SimpleDilated(old_num_classes)
-        old_model.load_state_dict(state['state_dict'])
-        old_model.eval()
-        
+        if pretrained_path is not None:
+            state = torch.load(pretrained_path, map_location = 'cpu')
+            
+            old_num_classes = state['state_dict']['fc_clf.2.bias'].shape[0]
+            
+            
+            old_model = SimpleDilated(old_num_classes)
+            old_model.load_state_dict(state['state_dict'])
+            old_model.eval()
+        else:
+            old_model = SimpleDilated(2)
+            
         features_module = old_model.cnn_clf
         super().__init__(features_module, num_classes, n_layers2freeze, num_feat_maps, **argkws)
 
