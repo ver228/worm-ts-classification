@@ -55,7 +55,9 @@ class SkelEmbeddingsFlow(Dataset):
                  is_only_WT = False,
                  is_common_WT = False,
                  unsampled_test = False,
-                 merge_by_week = False
+                 merge_by_week = False,
+                 initial_frame = 0,
+                 last_frame = None
                  ):
         
         assert os.path.exists(fname)
@@ -73,12 +75,34 @@ class SkelEmbeddingsFlow(Dataset):
             video_info['strain'] = video_info['strain'].str.strip(' ')
             video_info = add_folds(video_info, self.fname)
             
+            if 'wormNum' in video_info:
+                #hack to include only videos with 5 worms in CeNDRAgg I will need to make this nicer later on
+                video_info = video_info[video_info['wormNum']==5]
+            
+            if last_frame is None:
+                last_frame = trajectories_ranges['frame_fin'].max()
+            else:
+                assert last_frame <= trajectories_ranges['frame_fin'].max()
+            assert initial_frame < last_frame
+            
+            good = (trajectories_ranges['frame_ini'] >= initial_frame) & (trajectories_ranges['frame_ini'] < last_frame-min_traj_size)
+            trajectories_ranges = trajectories_ranges[good]
+            
+            #clip data to be within the given frame ranges
+            to_clip = (trajectories_ranges['frame_fin']>last_frame).values
+            
+            fshifts = int(last_frame)-trajectories_ranges.loc[to_clip, 'frame_fin']
+            trajectories_ranges.loc[to_clip, 'row_fin'] += fshifts
+            trajectories_ranges.loc[to_clip, 'frame_fin'] = last_frame
             
             #add the size of each chuck in the video
             trajectories_ranges['size'] = trajectories_ranges['frame_fin'] - trajectories_ranges['frame_ini']
             
             #filter chucks that are too small
             trajectories_ranges = trajectories_ranges[trajectories_ranges['size'] >= min_traj_size]
+            
+            #filter videos that do not have valid trajectories after filtering
+            video_info = video_info.loc[trajectories_ranges['video_id'].unique()]
             
             #get the total size of all the chucks in a video
             #tot_ranges = trajectories_ranges.groupby('video_id').agg({'size':'sum'})

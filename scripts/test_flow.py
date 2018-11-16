@@ -20,6 +20,9 @@ if __name__ == '__main__':
     #emb_set = 'skeletons'
     #emb_set = 'eigen'
     emb_set = 'SWDB_angles'
+    #emb_set = 'CeNDRAgg_angles'
+    #emb_set = 'angles'
+    
     fname, results_dir_root = get_path(emb_set)
     
     gen = SkelTrainer(fname = fname, 
@@ -28,9 +31,8 @@ if __name__ == '__main__':
                         return_label = True, 
                         return_snp = False,
                         unsampled_test = True,
-                        sample_size = 22500,
-                        is_common_WT = True,
-                        merge_by_week = False#emb_set.startswith('SWDB')
+                        is_common_WT = False,
+                        merge_by_week = False
                         )
     
     #print([gen._strain_dict[x] for x in DIVERGENT_SET])
@@ -43,10 +45,8 @@ if __name__ == '__main__':
                         return_snp = False,
                         unsampled_test = True,
                         sample_size = 22500,
+                        last_frame = 22500
                         )
-    
-    
-    
     #%%
     
     loader = DataLoader(gen, 
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     #for ii, D in enumerate(tqdm.tqdm(gen)):
     #    dat.append(D[1])
     
-    for ii, D in enumerate(gen):    
+    for ii, (D, _) in enumerate(gen):    
         print([x.shape for x in D])
         
     

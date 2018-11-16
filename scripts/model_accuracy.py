@@ -59,12 +59,16 @@ def get_accuracies(save_name, set_type, model_path, cuda_id=0):
     model = get_model(model_name, gen.num_classes, gen.embedding_size)
     model = model.to(device)
     
-    assert set_type in model_path
+    #assert set_type in model_path
     state = torch.load(model_path, map_location = dev_str)
     print(state['epoch'])
     model.load_state_dict(state['state_dict'])
     model.eval()
 
+
+    
+    #model = torch.nn.DataParallel(model, device_ids=[0, 1, 2])
+    
     gen.test()
     test_indexes = gen.valid_index
     
@@ -76,9 +80,14 @@ def get_accuracies(save_name, set_type, model_path, cuda_id=0):
             target = gen._strain_dict[strain]
             
             x_in = gen._get_data(vid_id)[None, None, :, :]
+            
             X = torch.from_numpy(x_in).to(device)
             
-            pred = model(X)
+            try:
+                
+                pred = model(X)
+            except:
+                continue
             pred = pred.cpu().detach().numpy()[0]
             
             
@@ -120,96 +129,98 @@ def get_accuracies(save_name, set_type, model_path, cuda_id=0):
 if __name__ == '__main__':
    cuda_id = 2
    save_dir = ''
-#   
-#   frozen_cross_paths ={
-#           'SWDB frozen from CeNDR' : 
-#           'CeNDR frozen from SWDB' : 
-#           }
    
    all_args = [
-             ('CeNDR frozen from SWDB',
-             'angles',
-             'logs/angles_20180816_221100_pretrainedcross-freeze20_sgd_lr0.0001_wd0.0001_batch8'
-             ),  
-             ('SWDB frozen from CeNDR',
-             'SWDB_angles',
-             'logs/SWDB_angles_20180816_221256_pretrainedcross-freeze20_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-            ('CeNDR_angles',
-             'angles',
+             ('CeNDR on CeNDRAgg',
+             'CeNDRAgg_angles',
              'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
-             ),
-            ('CeNDR_eigen',
-             'eigen',
-             'log_CeNDR/eigen_20180629_092428_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-             ('CeNDR_AE',
-              'AE_emb32_20180613_l1',
-              'log_CeNDR/AE_emb32_20180613_l1_20180627_235810_simpledilated_sgd_lr0.001_wd0.0001_batch8'
-             ),
-              
-             ('CeNDR_angles_resnet18',
-             'angles',
-             'logs/angles_20180817_113241_resnet18_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-               
-             ('CeNDR_angles_resnet18_R',
-             'angles',
-              'logs/angles_20180819_084342_R_resnet18_sgd_lr0.0001_wd0.0001_batch8'
-              ),
-             ('CeNDR_angles_resnet18-freeze5',
-             'angles',
-             'logs/angles_20180817_115207_resnet18-freeze5_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-             ('CeNDR_angles_resnet18-freeze6',
-             'angles',
-             'logs/angles_20180817_115548_resnet18-freeze6_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-             ('CeNDR_angles_resnet18-freeze7',
-             'angles',
-             'logs/angles_20180817_115054_resnet18-freeze7_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-             ('CeNDR_angles_resnet18-freeze8',
-             'angles',
-             'logs/angles_20180817_115207_resnet18-freeze8_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-             ('CeNDR_angles_resnet34',
-             'angles',
-             'logs/angles_20180817_113316_resnet34_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-             
-              
-             ('SWDB_angles',
-             'SWDB_angles',
-             'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-             ('SWDB_angles_resnet18',
-             'SWDB_angles',
-             'logs/SWDB_angles_20180808_143338_resnet18_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-             ('SWDB_angles_resnet34',
-             'SWDB_angles',
-             'logs/SWDB_angles_20180808_143839_resnet34_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-             ('SWDB_angles_vgg11bn',
-             'SWDB_angles',
-             'logs/SWDB_angles_20180808_145049_vgg11bn_sgd_lr0.0001_wd0.0001_batch4'
-             ),
-              
-             ('SWDB_eigen',
-             'SWDB_eigen',
-             'log_SWDB_eigen/SWDB_eigen_20180711_214829_R_simpledilated_sgd_lr0.001_wd0.0001_batch8'
-             ),              
-             ('SWDB_eigen_resnet18',
-             'SWDB_eigen',
-             'logs/SWDB_eigen_20180808_145425_resnet18_sgd_lr0.0001_wd0.0001_batch8'
-             ),
-             ('SWDB_eigen_resnet34',
-             'SWDB_eigen',
-             'logs/SWDB_eigen_20180808_145216_resnet34_sgd_lr0.0001_wd0.0001_batch8'
              )
-             
-             ]
+              ]
+   
+#   all_args = [
+#             ('CeNDR frozen from SWDB',
+#             'angles',
+#             'logs/angles_20180816_221100_pretrainedcross-freeze20_sgd_lr0.0001_wd0.0001_batch8'
+#             ),  
+#             ('SWDB frozen from CeNDR',
+#             'SWDB_angles',
+#             'logs/SWDB_angles_20180816_221256_pretrainedcross-freeze20_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#            ('CeNDR_angles',
+#             'angles',
+#             'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
+#             ),
+#            ('CeNDR_eigen',
+#             'eigen',
+#             'log_CeNDR/eigen_20180629_092428_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             ('CeNDR_AE',
+#              'AE_emb32_20180613_l1',
+#              'log_CeNDR/AE_emb32_20180613_l1_20180627_235810_simpledilated_sgd_lr0.001_wd0.0001_batch8'
+#             ),
+#              
+#             ('CeNDR_angles_resnet18',
+#             'angles',
+#             'logs/angles_20180817_113241_resnet18_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#               
+#             ('CeNDR_angles_resnet18_R',
+#             'angles',
+#              'logs/angles_20180819_084342_R_resnet18_sgd_lr0.0001_wd0.0001_batch8'
+#              ),
+#             ('CeNDR_angles_resnet18-freeze5',
+#             'angles',
+#             'logs/angles_20180817_115207_resnet18-freeze5_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             ('CeNDR_angles_resnet18-freeze6',
+#             'angles',
+#             'logs/angles_20180817_115548_resnet18-freeze6_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             ('CeNDR_angles_resnet18-freeze7',
+#             'angles',
+#             'logs/angles_20180817_115054_resnet18-freeze7_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             ('CeNDR_angles_resnet18-freeze8',
+#             'angles',
+#             'logs/angles_20180817_115207_resnet18-freeze8_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             ('CeNDR_angles_resnet34',
+#             'angles',
+#             'logs/angles_20180817_113316_resnet34_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             
+#              
+#             ('SWDB_angles',
+#             'SWDB_angles',
+#             'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             ('SWDB_angles_resnet18',
+#             'SWDB_angles',
+#             'logs/SWDB_angles_20180808_143338_resnet18_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             ('SWDB_angles_resnet34',
+#             'SWDB_angles',
+#             'logs/SWDB_angles_20180808_143839_resnet34_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             ('SWDB_angles_vgg11bn',
+#             'SWDB_angles',
+#             'logs/SWDB_angles_20180808_145049_vgg11bn_sgd_lr0.0001_wd0.0001_batch4'
+#             ),
+#              
+#             ('SWDB_eigen',
+#             'SWDB_eigen',
+#             'log_SWDB_eigen/SWDB_eigen_20180711_214829_R_simpledilated_sgd_lr0.001_wd0.0001_batch8'
+#             ),              
+#             ('SWDB_eigen_resnet18',
+#             'SWDB_eigen',
+#             'logs/SWDB_eigen_20180808_145425_resnet18_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
+#             ('SWDB_eigen_resnet34',
+#             'SWDB_eigen',
+#             'logs/SWDB_eigen_20180808_145216_resnet34_sgd_lr0.0001_wd0.0001_batch8'
+#             )
+#             
+#             ]
 
 
 
@@ -278,6 +289,7 @@ if __name__ == '__main__':
    
    all_summaries = []
    for args in all_args:
+       print(args)
        summary, df = get_accuracies(*args, cuda_id=cuda_id)
        
        df.to_csv(save_dir / (args[0] + '.csv'))

@@ -79,14 +79,23 @@ def copy_data_to_tmp(fname, copy_tmp):
 def get_model(model_name, num_classes, embedding_size, pretrained_path=None):
     def _getlayers2freeze(x):
         #'resnet18-freeze13'
+        
+        n_layers2freeze = None
+        pretrained = True
+
         parts = x.split('-')
         bn = parts[0]
-        if len(parts) > 1:
+        
+        next_str = parts[1] if len(parts) > 1 else ''
+        
+        if next_str == 'new':
+            pretrained = False
+        elif next_str.startswith('freeze'):
             n_layers2freeze = int(parts[1].replace('freeze', ''))
-        else:
-            n_layers2freeze = None
-            
-        return bn, n_layers2freeze
+        elif len(next_str): #if there is still something rise and error
+            raise ValueError(next_str)
+
+        return bn, n_layers2freeze, pretrained
     
     
     if model_name == 'darknet':
@@ -103,26 +112,27 @@ def get_model(model_name, num_classes, embedding_size, pretrained_path=None):
         model = SimpleDilated(num_classes, use_maxpooling=True)
     elif model_name == 'simpledilated1d':
         model = SimpleDilated1D(embedding_size, num_classes)
-    elif model_name.startswith('squeezenet'):
-        #'squeezenet1.0-freeze13'
-        bn, n_layers2freeze = _getlayers2freeze(model_name)
-        model = SqueezeNetP(bn, num_classes, n_layers2freeze)
-    elif model_name.startswith('resnet'):
-        bn, n_layers2freeze = _getlayers2freeze(model_name)
-        model = ResNetP(bn, num_classes, n_layers2freeze)
-    elif model_name.startswith('vgg'):
-        bn, n_layers2freeze = _getlayers2freeze(model_name)
-        model = VGGP(bn, num_classes, n_layers2freeze)
-    elif model_name.startswith('densenet'):
-        bn, n_layers2freeze = _getlayers2freeze(model_name)
-        model = DenseNetP(bn, num_classes, n_layers2freeze)
-    
     elif model_name.startswith('pretrainedcross'):
-        bn, n_layers2freeze = _getlayers2freeze(model_name)
+        _, n_layers2freeze, _ = _getlayers2freeze(model_name)
         model = PretrainedSimpleDilated(pretrained_path, num_classes, n_layers2freeze)
-
     else:
-        raise ValueError('Invalid model name {}'.format(model_name))
+        if model_name.startswith('squeezenet'):
+            ModelFun = SqueezeNetP
+        elif model_name.startswith('resnet'):
+            ModelFun = ResNetP
+        elif model_name.startswith('vgg'):
+            ModelFun = VGGP
+        elif model_name.startswith('densenet'):
+            ModelFun = DenseNetP
+        else:
+            raise ValueError('Invalid model name {}'.format(model_name))
+            
+        bn, n_layers2freeze, pretrained = _getlayers2freeze(model_name)
+        model = ModelFun(bn, 
+                         num_classes, 
+                         n_layers2freeze = n_layers2freeze, 
+                         pretrained = pretrained
+                         )
 
     return model
 #%%

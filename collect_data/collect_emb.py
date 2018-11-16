@@ -140,10 +140,23 @@ def get_video_info_from_files(root_dir, f_ext):
     video_info = pd.DataFrame(video_info, columns=['strain', 'set_n', 'n_worms', 'date', 'time', 'file_path'])
     return video_info, fnames
 
-def get_video_info_from_csv():
-    pass
+def get_video_info_from_csv_agg(root_dir):
+    csv_path = str(Path.home() / 'workspace/WormData/screenings/Serena_WT_Screening/metadata_aggregation_screening.csv')
+    bad_labels = ['NONE']
+    
+    video_info = pd.read_csv(csv_path)
+    video_info['dirname'] = video_info['dirname'].str.replace('/Volumes/behavgenom_archive\$/Serena/AggregationScreening/MaskedVideos/', '')
+    video_info = video_info.rename(columns={'strain_name':'strain', 'dirname':'file_path'})
+    video_info = video_info[~video_info['strain'].isin(bad_labels)]
+    
 
-#%%
+    fnames = root_dir + '/' + video_info['file_path'] + '/'+  video_info['basename'].str.replace('.hdf5', '_featuresN.hdf5')
+    is_valid = [os.path.exists(x) for x in fnames.values]
+
+    video_info = video_info[is_valid]
+    fnames = [Path(x) for e, x in zip(is_valid,fnames.values) if e]
+
+    return video_info, fnames
 
 
 if __name__ == '__main__':
@@ -157,38 +170,39 @@ if __name__ == '__main__':
     # embeddings_field = '/coordinates/skeletons' 
 
     
-   # set_type = 'CeNDR'
-   # root_dir = root + 'screenings/CeNDR/Results'
-   # f_ext = '_featuresN.hdf5'
-   # col_label = 'skeleton_id'
-   # embeddings_field = '/coordinates/skeletons'
+    # set_type = 'CeNDR'
+    # root_dir = root + 'screenings/CeNDR/Results'
+    # f_ext = '_featuresN.hdf5'
+    # col_label = 'skeleton_id'
+    # embeddings_field = '/coordinates/skeletons'
 
 
-   set_type = 'AggCeNDR'
-   root_dir = root + 'screenings/Serena_WT_Screening/Results'
-   f_ext = '_featuresN.hdf5'
-   col_label = 'skeleton_id'
-   embeddings_field = '/coordinates/skeletons'
+    set_type = 'CeNDRAgg'
+    root_dir = root + 'screenings/Serena_WT_Screening/Results'
+    f_ext = '_featuresN.hdf5'
+    col_label = 'skeleton_id'
+    embeddings_field = '/coordinates/skeletons'
 
-   emb_set = 'angles'
-   n_embeddings = 48
+
+    emb_set = 'angles'
+    n_embeddings = 48
     
-#    emb_set = 'skeletons'
-#    n_embeddings = 49*2
+    # emb_set = 'skeletons'
+    # n_embeddings = 49*2
     
-#    emb_set = 'eigen'
-#    n_embeddings = 6
+    # emb_set = 'eigen'
+    # n_embeddings = 6
 
-#    emb_set = 'eigenfull'
-#    n_embeddings = 10  
+    # emb_set = 'eigenfull'
+    # n_embeddings = 10  
 
-#    set_type = 'CeNDR'
-#    emb_set = 'AE2DWithSkels32_emb32_20180620'
-#    root_dir = root + 'experiments/autoencoders/embeddings/CeNDR_ROIs_embeddings/20180620_173601_AE2DWithSkels32_skel-1-1_adam_lr0.001_batch16'
-#    f_ext = '_embeddings.hdf5'
-#    col_label = 'roi_index'
-#    n_embeddings = 32
-#    embeddings_field = '/embeddings'
+    # set_type = 'CeNDR'
+    # emb_set = 'AE2DWithSkels32_emb32_20180620'
+    # root_dir = root + 'experiments/autoencoders/embeddings/CeNDR_ROIs_embeddings/20180620_173601_AE2DWithSkels32_skel-1-1_adam_lr0.001_batch16'
+    # f_ext = '_embeddings.hdf5'
+    # col_label = 'roi_index'
+    # n_embeddings = 32
+    # embeddings_field = '/embeddings'
     if emb_set.startswith('eigen'):
         eigen_projection_file = Path(__file__).resolve().parent / 'pca_components.npy'
         assert eigen_projection_file.exists()
@@ -198,6 +212,8 @@ if __name__ == '__main__':
     #%%
     if set_type == 'CeNDR':
         video_info, fnames = get_video_info_from_files(root_dir, f_ext)
+    elif set_type == 'CeNDRAgg':
+        video_info, fnames = get_video_info_from_csv_agg(root_dir)
     elif set_type == 'SWDB':
         old_root = '/Volumes/behavgenom_archive\$/'
         csv_file = Path(__file__).resolve().parents[2] / 'single_worm' / 'interpolated_skeletons' / 'strains2process.csv'
@@ -239,29 +255,34 @@ if __name__ == '__main__':
                 emb_g = fid.get_node(embeddings_field)
                 for w_ind, dat in trajectories_data.groupby('worm_index_joined'):
                     ini, top = dat[col_label].min(), dat[col_label].max()
-                    w_emb = emb_g[ini:top]
-                    
-                    if emb_set == 'angles':
-                        w_emb, _ = _h_angles(w_emb)
-                    elif emb_set == 'skeletons':
-                        w_emb = _h_centred_skels(w_emb)
+
+                    try:
+
+                        w_emb = emb_g[ini:top]
                         
-                    elif emb_set == 'eigen':
-                        w_emb, _ = _h_eigenworms(w_emb, EIGENWORMS_COMPONENTS)
-                    elif emb_set == 'eigenfull':
-                        w_emb = _h_eigenworms_full(w_emb, EIGENWORMS_COMPONENTS)
+                        if emb_set == 'angles':
+                            w_emb, _ = _h_angles(w_emb)
+                        elif emb_set == 'skeletons':
+                            w_emb = _h_centred_skels(w_emb)
+                            
+                        elif emb_set == 'eigen':
+                            w_emb, _ = _h_eigenworms(w_emb, EIGENWORMS_COMPONENTS)
+                        elif emb_set == 'eigenfull':
+                            w_emb = _h_eigenworms_full(w_emb, EIGENWORMS_COMPONENTS)
+                            
+                            
+                        angle_tab.append(w_emb)
+                        angle_tab.append(np.full((1, n_embeddings), np.nan)) #add this to be sure I am not reading between embeddings when processing the data
                         
+                        row = (ifname, w_ind,
+                               dat['frame_number'].min(), dat['frame_number'].max(),
+                               irow, irow + w_emb.shape[0],
+                               )
+                        irow += w_emb.shape[0] + 1
                         
-                    angle_tab.append(w_emb)
-                    angle_tab.append(np.full((1, n_embeddings), np.nan)) #add this to be sure I am not reading between embeddings when processing the data
-                    
-                    row = (ifname, w_ind,
-                           dat['frame_number'].min(), dat['frame_number'].max(),
-                           irow, irow + w_emb.shape[0],
-                           )
-                    irow += w_emb.shape[0] + 1
-                    
-                    traj_ranges.append(row)
+                        traj_ranges.append(row)
+                    except tables.exceptions.HDF5ExtError:
+                        print('Error : {}'.format(fname))
                  
     traj_ranges = pd.DataFrame(traj_ranges, columns=['video_id', 'worm_index', 'frame_ini', 'frame_fin', 'row_ini', 'row_fin'])
     

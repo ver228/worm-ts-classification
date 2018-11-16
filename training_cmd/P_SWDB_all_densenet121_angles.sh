@@ -13,7 +13,7 @@ echo cuda_id: $CUDA_VISIBLE_DEVICES
 
 SCRIPTPATH="$HOME/GitLab/worm-ts-classification/scripts/train_model.py"
 python $SCRIPTPATH \
---model_name 'densenet121' --set_type 'SWDB_angles' --n_epochs 1000 --batch_size 8 \
+--model_name 'densenet121' --set_type 'SWDB_angles' --n_epochs 1000 --batch_size 3 \
 --num_workers 1 --optimizer 'sgd' --lr 0.0001  --weight_decay 0.0001 \
 --copy_tmp '/tmp/avelino'$CUDA_VISIBLE_DEVICES 
 

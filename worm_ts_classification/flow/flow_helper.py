@@ -98,6 +98,8 @@ def get_folds_file(fname):
     bn = Path(fname).name
     if bn.startswith('SWDB'):
         folds_file = os.path.join(ROOT_DIR, 'SWDB_fold_dict.p')
+    elif bn.startswith('CeNDRAgg'):
+        folds_file = os.path.join(ROOT_DIR, 'CeNDRAgg_fold_dict.p')
     elif bn.startswith('CeNDR'):
         folds_file = os.path.join(ROOT_DIR, 'CeNDR_fold_dict.p')
     else:
@@ -197,13 +199,15 @@ def load_strain_dict(source_file):
 #%%
 if __name__ == '__main__':
     #fname = '/Users/avelinojaver/Documents/Data/experiments/classify_strains/CeNDR_angles.hdf5'
-    fname = Path.home() / 'workspace/WormData/experiments/classify_strains/SWDB_angles.hdf5'
+    #fname = Path.home() / 'workspace/WormData/experiments/classify_strains/SWDB_angles.hdf5'
+    fname = Path.home() / 'workspace/WormData/experiments/classify_strains/data/CeNDRAgg_angles.hdf5'
+    
     with pd.HDFStore(fname) as fid:
         video_info = fid['/video_info']
         video_info['strain'] = video_info['strain'].str.strip(' ')
     
     #save_folds_dict(video_info, fname, seed = 777)
-        
+    
     video_info = add_folds(video_info, fname)
     #%%
     

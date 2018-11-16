@@ -13,5 +13,5 @@ FILESSOURCE="$HOME/workspace/files2process.txt"
 echo "Username: " `whoami`
 FSOURCE=$(awk "NR==$SGE_TASK_ID" $FILESSOURCE)
 echo $FSOURCE
-eval $FSOURCE
+
 exit 0
