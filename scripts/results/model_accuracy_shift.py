@@ -7,7 +7,7 @@ Created on Wed May 16 11:31:12 2018
 """
 import sys
 from pathlib import Path 
-root_dir = Path(__file__).resolve().parent.parent
+root_dir = Path(__file__).resolve().parents[2]
 sys.path.append(str(root_dir))
 
 from worm_ts_classification.path import get_path
@@ -72,16 +72,12 @@ def get_accuracies(save_name, set_type, model_path, time_ranges, is_divergent_se
     model.load_state_dict(state['state_dict'])
     model.eval()
 
-
-    
-    #model = torch.nn.DataParallel(model, device_ids=[0, 1, 2])
-    
-    
-    test_indexes = gen.valid_index
+    #here i want to use all data since i didn't train on this dataset
+    valid_index = gen.train_index.tolist() + gen.test_index.tolist()
     
     all_res = []
     with torch.no_grad():
-        pbar = tqdm.tqdm(test_indexes)
+        pbar = tqdm.tqdm(valid_index)
         for vid_id in pbar:
             strain = gen.video_info.loc[vid_id, 'strain']
             target = gen._strain_dict[strain]
@@ -152,13 +148,13 @@ if __name__ == '__main__':
    t_window = 22500
    t_delta = 3750
    max_t = 67500
-   is_divergent_set = True
+   is_divergent_set = False
    for t_ini in range(0, max_t-t_window+1, t_delta):
        summary, df = get_accuracies(save_name, 
                                     set_type,
                                     model_path,
                                     is_divergent_set = is_divergent_set,
-                                    time_ranges = (t_ini, t_ini + t_delta),
+                                    time_ranges = (t_ini, t_ini + t_window),
                                     cuda_id=cuda_id)
        
        bn = '{}_{}s'.format(save_name, int(round(t_ini/25.)))

@@ -11,17 +11,17 @@ import sys
 
 
 dflt_src_file = Path.home() / 'workspace' / 'tierpsy_output.txt'
-dflt_src_file = Path.home() / 'workspace' / 'files2process.txt'
+dflt_dst_file = Path.home() / 'workspace' / 'files2process.txt'
 
 if __name__ == '__main__':
-	import pdb
-	pdb.set_trace()
-
 	if len(sys.argv) == 1:
+		src_file, dst_file = dflt_src_file, dflt_dst_file
+	elif len(sys.argv) == 2:
+		src_file, dst_file = sys.argv[1], dflt_dst_file
+	else:
+		src_file, dst_file = sys.argv[1:3]
 
-
-
-	
+	print(src_file, dst_file)
 
 	split_token = '\n*********************************************\n'
 

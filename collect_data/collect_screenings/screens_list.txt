@@ -1,0 +1,8 @@
+single_worm WT2_anticlockwise_TIERPSY.json ~/workspace/WormData/screenings/single_worm
+Celine WT2_anticlockwise_TIERPSY.json ~/workspace/WormData/screenings/Celine
+Drug_Screening _AEX_RIG.json ~/workspace/WormData/screenings/Drug_Screening/MaskedVideos
+Serena_WT_Screening _AEX_RIG.json ~/workspace/WormData/screenings/Serena_WT_Screening/MaskedVideos
+MMP _AEX_RIG.json ~/workspace/WormData/screenings/MMP/MaskedVideos
+CeNDR _AEX_RIG.json ~/workspace/WormData/screenings/CeNDR/MaskedVideos
+Lidia MULTIWORM_TIERPSY.json ~/workspace/WormData/screenings/Lidia/MaskedVideos
+Pratheeban MULTIWORM_TIERPSY.json ~/workspace/WormData/screenings/Pratheeban/MaskedVideos

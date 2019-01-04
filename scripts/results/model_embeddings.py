@@ -7,7 +7,7 @@ Created on Wed May 16 11:31:12 2018
 """
 import sys
 from pathlib import Path 
-root_dir = Path(__file__).resolve().parent.parent
+root_dir = Path(__file__).resolve().parents[2]
 sys.path.append(str(root_dir))
 
 from worm_ts_classification.path import get_path
@@ -20,7 +20,8 @@ import torch
 
 import tqdm
 
-def get_embeddings(save_name, set_type, model_path):   
+#%%
+def get_embeddings(save_name, set_type, model_path, argkws = {}):   
     fname, results_dir_root = get_path(set_type)
     
     model_path = os.path.join(results_dir_root, model_path, 'checkpoint.pth.tar')
@@ -53,26 +54,51 @@ def get_embeddings(save_name, set_type, model_path):
                       return_label = return_label,
                       return_snp = return_snp,
                       unsampled_test = unsampled_test,
-                      train_epoch_magnifier=1)
+                      train_epoch_magnifier=1,
+                      **argkws)
 
-    model = get_model(model_name, gen.num_classes, gen.embedding_size)
-    model = model.to(device)
+
     
-    assert set_type in model_path
+    
+    
+    #assert set_type in model_path
     state = torch.load(model_path, map_location = dev_str)
     print(state['epoch'])
+    
+    
+    kk = next(reversed(state['state_dict'].keys()))
+    model_num_classes = state['state_dict'][kk].shape[0]
+    
+    
+    model = get_model(model_name, model_num_classes, gen.embedding_size)
+    model = model.to(device)
     model.load_state_dict(state['state_dict'])
     model.eval()
     
+    
     if save_name.endswith('_TRAIN'):
         gen.train()
+        valid_indexes = gen.valid_index
+    elif save_name.endswith('_ALL'):
+        
+        gen.train()
+        v1 = gen.valid_index.copy()
+        
+        gen.test()
+        v2 = gen.valid_index.copy()
+        
+        valid_indexes = v1 + v2
+        
     else:
         gen.test()
-    test_indexes = gen.valid_index
+
+    
+    
+    
     
     all_embeddings = []
     with torch.no_grad():
-        pbar = tqdm.tqdm(test_indexes)
+        pbar = tqdm.tqdm(valid_indexes)
         for vid_id in pbar:
             strain = gen.video_info.loc[vid_id, 'strain']
             
@@ -96,7 +122,7 @@ def get_embeddings(save_name, set_type, model_path):
     df.to_csv(str(fname))
 #%%
 if __name__ == '__main__':
-   cuda_id = 0
+   cuda_id = 1
    save_dir = ''
 
    all_args = [
@@ -108,14 +134,14 @@ if __name__ == '__main__':
 #             'SWDB_angles',
 #             'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
 #             ),
-             ('CeNDR_angles_TRAIN',
-             'angles',
-             'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
-             ),
-            ('SWDB_angles_TRAIN',
-             'SWDB_angles',
-             'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
-             ),
+#             ('CeNDR_angles_TRAIN',
+#             'angles',
+#             'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
+#             ),
+#            ('SWDB_angles_TRAIN',
+#             'SWDB_angles',
+#             'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
+#             ),
 #             ('CeNDR_angles',
 #             'angles',
 #             'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
@@ -132,13 +158,44 @@ if __name__ == '__main__':
 #             'angles',
 #             'logs/angles_20180819_084342_R_resnet18_sgd_lr0.0001_wd0.0001_batch8'
 #             ),
+#             ('SWDB_using_CeNDR',
+#              'SWDB_angles',
+#              'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
+#              ),
+#              ('CeNDR_using_SWDB',
+#              'CeNDR_angles',
+#              'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
+#              ),
+#             ('CeNDRAgg_using_CeNDR_ALL',
+#              'CeNDRAgg_angles',
+#              'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
+#              ),
+#              ('CeNDRAgg_using_SWDB_ALL',
+#              'CeNDRAgg_angles',
+#              'log_SWDB_angles/SWDB_angles_20180711_214814_R_simpledilated_sgd_lr0.0001_wd0.0001_batch8'
+#              ),
            ]
    
+   t_window = 22500
+   t_delta = 3750
+   max_t = 67500
+   #%%
+   for t_ini in range(0, max_t-t_window+1, t_delta):
+       
+       initial_frame, last_frame  = (t_ini, t_ini + t_window)
+       dd = (f'CeNDRAgg-t{initial_frame:05d}-{last_frame:05d}_using_CeNDR_ALL',
+              'CeNDRAgg_angles',
+              'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8',
+              {'initial_frame' : initial_frame, 'last_frame' : last_frame}
+              )
+       all_args.append(dd)
    
+   #%%
    _, results_dir_root = get_path('')
    save_dir = Path(results_dir_root) / 'summary'
    save_dir.mkdir(parents=True, exist_ok=True)
-   
+   #%%
    for args in all_args:
        get_embeddings(*args)
+       
        

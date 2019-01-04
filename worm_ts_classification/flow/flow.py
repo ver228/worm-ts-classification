@@ -170,7 +170,7 @@ class SkelEmbeddingsFlow(Dataset):
             
     def test(self):
         self.is_train = False
-        self.valid_index = self.test_index
+        self.valid_index = self.test_index.tolist()
     
     
     def __getitem__(self, index):
