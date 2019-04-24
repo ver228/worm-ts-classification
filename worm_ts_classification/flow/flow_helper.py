@@ -11,6 +11,7 @@ import pickle
 import numpy as np
 import pandas as pd
 
+import warnings
 from pathlib import Path
 
 
@@ -102,8 +103,11 @@ def get_folds_file(fname):
         folds_file = os.path.join(ROOT_DIR, 'CeNDRAgg_fold_dict.p')
     elif bn.startswith('CeNDR'):
         folds_file = os.path.join(ROOT_DIR, 'CeNDR_fold_dict.p')
+    elif bn.startswith('pesticides-training'):
+        folds_file = os.path.join(ROOT_DIR, 'pesticides-training_fold_dict.p')
     else:
-        raise ValueError
+        warnings.warn('Folds are not added since {} does not exists.'.format(bn))
+        folds_file = None
     return folds_file
 
 def read_CeNDR_snps(source_file = DFLT_SNP_FILE):
@@ -154,11 +158,11 @@ def add_bn_series(df):
     return df
 
 
-def save_folds_dict(df, source_file, seed = 777):
+def save_folds_dict(df, source_file, field2group = 'strain', n_folds = 3, seed = 777):
     df = add_bn_series(df)
     folds_dict = {}
-    for ss, dat in df.groupby('strain'):
-        gen = itertools.cycle(range(3))
+    for ss, dat in df.groupby(field2group):
+        gen = itertools.cycle(range(n_folds))
         for bn in dat['base_name'].values:
             folds_dict[bn] = next(gen)
     
@@ -168,6 +172,9 @@ def save_folds_dict(df, source_file, seed = 777):
 
 def add_folds(df, source_file):
     folds_file = get_folds_file(source_file)
+    if folds_file is None:
+        return df
+    
     df = add_bn_series(df)
     with open(folds_file, 'rb') as fid:
         folds_dict = pickle.load(fid)
@@ -182,12 +189,13 @@ def add_folds(df, source_file):
 #%%
 def _get_strain_dict_file(source_file):
     bn = Path(source_file).name.partition('_')[0]
+    bn = bn.partition('-')[0]
     strain_dict_file = os.path.join(ROOT_DIR, bn + '_straindict.p')
     return strain_dict_file
 
-def save_strain_dict(df, source_file):
+def save_strain_dict(df, source_file, field2group = 'strain'):
     strain_dict_file = _get_strain_dict_file(source_file)
-    strain_dict = {x:ii for ii,x in enumerate(sorted(df['strain'].unique()))}
+    strain_dict = {x:ii for ii,x in enumerate(sorted(df[field2group].unique()))}
     with open(strain_dict_file, 'wb') as fid:
         pickle.dump(strain_dict, fid)
         
@@ -200,15 +208,23 @@ def load_strain_dict(source_file):
 if __name__ == '__main__':
     #fname = '/Users/avelinojaver/Documents/Data/experiments/classify_strains/CeNDR_angles.hdf5'
     #fname = Path.home() / 'workspace/WormData/experiments/classify_strains/SWDB_angles.hdf5'
-    fname = Path.home() / 'workspace/WormData/experiments/classify_strains/data/CeNDRAgg_angles.hdf5'
+    #fname = Path.home() / 'workspace/WormData/experiments/classify_strains/data/CeNDRAgg_angles.hdf5'
+    fname = Path.home() / 'workspace/WormData/experiments/classify_strains/data/pesticides-training_angles.hdf5'
     
     with pd.HDFStore(fname) as fid:
         video_info = fid['/video_info']
-        video_info['strain'] = video_info['strain'].str.strip(' ')
-    
-    #save_folds_dict(video_info, fname, seed = 777)
+#        video_info['strain'] = video_info['strain'].str.strip(' ')
+    field2group = 'MOA_group'
+    n_folds = 10
+    save_folds_dict(video_info, 
+                    fname, 
+                    field2group = field2group, 
+                    n_folds = n_folds,
+                    seed = 777)
     
     video_info = add_folds(video_info, fname)
+    
+    save_strain_dict(video_info, fname, field2group = field2group)
     #%%
     
     

@@ -137,12 +137,14 @@ if __name__ == '__main__':
    cuda_id = 2
    save_dir = ''
    
-   all_args = [
-             ('CeNDR on CeNDRAgg',
-             'CeNDRAgg_angles',
-             'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
-             )
-              ]
+
+   
+#   all_args = [
+#             ('CeNDR on CeNDRAgg',
+#             'CeNDRAgg_angles',
+#             'log_CeNDR/angles_20180531_125503_R_simpledilated_sgd_lr0.0001_wd0_batch8'
+#             )
+#              ]
    
 #   all_args = [
 #             ('CeNDR frozen from SWDB',

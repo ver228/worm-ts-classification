@@ -60,7 +60,8 @@ class SkelEmbeddingsFlow(Dataset):
                  last_frame = None
                  ):
         
-        assert os.path.exists(fname)
+        if not os.path.exists(fname):
+            raise FileNotFoundError(fname)
         
         self.fname = fname
         self.min_traj_size = min_traj_size
@@ -69,10 +70,20 @@ class SkelEmbeddingsFlow(Dataset):
         self.is_balance_training = is_balance_training
         self.unsampled_test = unsampled_test
         
+        if 'pesticides' in fname:
+            self.field2pred = 'MOA_group'
+        else:
+            self.field2pred = 'strain'
+        
         with pd.HDFStore(fname) as fid:
             trajectories_ranges = fid['/trajectories_ranges']
             video_info = fid['/video_info']
-            video_info['strain'] = video_info['strain'].str.strip(' ')
+            
+            try:
+                video_info[self.field2pred] = video_info[self.field2pred].str.strip(' ')
+            except (AttributeError, KeyError):
+                pass
+            
             video_info = add_folds(video_info, self.fname)
             
             if 'wormNum' in video_info:
@@ -109,9 +120,10 @@ class SkelEmbeddingsFlow(Dataset):
             #video_info = video_info[tot_ranges['size'] >= sample_size]
             
             #only keep the strains that have at least 3 valid videos
-            vid_per_strain = video_info['strain'].value_counts()
-            ss = vid_per_strain.index[vid_per_strain.values > 2]
-            video_info = video_info[video_info['strain'].isin(ss)]
+            if self.field2pred in video_info:
+                vid_per_strain = video_info[self.field2pred].value_counts()
+                ss = vid_per_strain.index[vid_per_strain.values > 2]
+                video_info = video_info[video_info[self.field2pred].isin(ss)]
         
         if merge_by_week:
             video_info, trajectories_ranges = _merge_videos_by_week(video_info, trajectories_ranges)
@@ -146,10 +158,17 @@ class SkelEmbeddingsFlow(Dataset):
         self.fold_n_test = fold_n_test
         
         
-        self.train_index = self.video_info.index[self.video_info['fold'] != self.fold_n_test].tolist()
-        self.test_index = self.video_info.index[self.video_info['fold'] == self.fold_n_test].tolist()
-        
+        self.divide_test_train()
         self.train()
+    
+    def divide_test_train(self):
+        if 'fold' in self.video_info:
+            self.train_index = self.video_info.index[self.video_info['fold'] != self.fold_n_test].tolist()
+            self.test_index = self.video_info.index[self.video_info['fold'] == self.fold_n_test].tolist()
+        else:
+            self.train_index = []
+            self.test_index = self.video_info.index.tolist()
+    
     
     def train(self):
         self.is_train = True
@@ -157,7 +176,7 @@ class SkelEmbeddingsFlow(Dataset):
         
         #balance classes sampling
         if self.is_balance_training:
-            strain_g = self.video_info.loc[self.train_index].groupby('strain').groups
+            strain_g = self.video_info.loc[self.train_index].groupby(self.field2pred).groups
             strains = list(strain_g.keys())
             self.valid_index = []
             while len(self.valid_index) < tot:
@@ -170,7 +189,7 @@ class SkelEmbeddingsFlow(Dataset):
             
     def test(self):
         self.is_train = False
-        self.valid_index = self.test_index.tolist()
+        self.valid_index = list(self.test_index)
     
     
     def __getitem__(self, index):
@@ -255,12 +274,13 @@ class SkelTrainer(SkelEmbeddingsFlow):
             
             self.video_info = self.video_info[self.video_info['strain'].isin(valid_strains)]
         else:
-            self._strain_dict = load_strain_dict(self.fname)
+            try:
+                self._strain_dict = load_strain_dict(self.fname)
+            except FileNotFoundError:
+                self._strain_dict = {}
         
         
-        self.train_index = self.video_info.index[self.video_info['fold'] != self.fold_n_test]
-        self.test_index = self.video_info.index[self.video_info['fold'] == self.fold_n_test]
-
+        self.divide_test_train()
         self.return_label = return_label
         self.return_snp = return_snp
         
@@ -272,12 +292,13 @@ class SkelTrainer(SkelEmbeddingsFlow):
             return len(self._strain_dict)
         elif self.return_snp:
             return self._snps.shape[0]
-    
+        
     def __getitem__(self, index):
         vid_id = self.valid_index[index]
-        strain = self.video_info.loc[vid_id, 'strain']
-        
         out = [self._get_data(vid_id)[None, :, :]]
+        
+        if self.field2pred in self.video_info:
+            strain = self.video_info.loc[vid_id, self.field2pred]
         
         if  self.return_label:
             out.append(self._strain_dict[strain])
